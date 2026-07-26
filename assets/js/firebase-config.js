@@ -1,5 +1,7 @@
-import { initializeApp } from
-  "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
+import {
+  getApps,
+  initializeApp
+} from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
 
 import {
   getAuth
@@ -14,16 +16,30 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-storage.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDwn2pB-P8Vb-Z-qPGrpu7p01NTmxpa7Xs",
+  apiKey: "SUA_API_KEY_REAL",
   authDomain: "iuna-e113d.firebaseapp.com",
   projectId: "iuna-e113d",
   storageBucket: "iuna-e113d.firebasestorage.app",
-  messagingSenderId: "611255762922",
-  appId: "1:611255762922:web:be70b6fd48bff0c4db3c93"
+  messagingSenderId: "SEU_MESSAGING_SENDER_ID",
+  appId: "SEU_APP_ID"
 };
 
-const app = initializeApp(firebaseConfig);
+const app = getApps().length
+  ? getApps()[0]
+  : initializeApp(firebaseConfig);
 
-export const auth = getAuth(app);
-export const db = getFirestore(app);
-export const storage = getStorage(app);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const storage = getStorage(app);
+
+console.log("[FIREBASE] Inicializado:", {
+  projectId: app.options.projectId,
+  authDomain: app.options.authDomain
+});
+
+export {
+  app,
+  auth,
+  db,
+  storage
+};
