@@ -4,30 +4,23 @@ import {
   onAuthStateChanged,
   sendPasswordResetEmail,
   setPersistence,
-  signInWithEmailAndPassword,
-  signOut
+  signInWithEmailAndPassword
 } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
 
 import {
-  doc,
-  getDoc
-} from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
-
-import {
-  auth,
-  db
+  auth
 } from "./firebase-config.js";
 
-const form = document.querySelector("#loginForm");
+const loginForm = document.querySelector("#loginForm");
 const emailInput = document.querySelector("#email");
 const passwordInput = document.querySelector("#password");
+const rememberInput = document.querySelector("#remember");
 const feedback = document.querySelector("#loginFeedback");
 const togglePassword = document.querySelector("#togglePassword");
-const forgotPassword = document.querySelector("#forgotPassword");
-const rememberInput = document.querySelector("#remember");
-const submitButton = form?.querySelector('button[type="submit"]');
+const forgotPasswordButton = document.querySelector("#forgotPassword");
+const submitButton = loginForm?.querySelector('button[type="submit"]');
 
-let initialSessionChecked = false;
+let authChecked = false;
 
 /* =====================================================
    MENSAGENS
@@ -42,8 +35,8 @@ function showFeedback(message, type = "error") {
   feedback.dataset.type = type;
 
   const colors = {
-    error: "#b33a3a",
-    success: "#51765c",
+    error: "#b83f4b",
+    success: "#34785c",
     info: "#76549b"
   };
 
@@ -61,26 +54,30 @@ function clearFeedback() {
 }
 
 /* =====================================================
-   ESTADO DO BOTÃO
+   CARREGAMENTO
 ===================================================== */
 
 function setLoading(loading) {
-  if (!submitButton) {
-    return;
+  if (submitButton) {
+    submitButton.disabled = loading;
+
+    const buttonText =
+      submitButton.querySelector("span");
+
+    if (buttonText) {
+      buttonText.textContent = loading
+        ? "Entrando..."
+        : "Entrar no painel";
+    }
   }
 
-  submitButton.disabled = loading;
-
-  const label = submitButton.querySelector("span");
-
-  if (label) {
-    label.textContent = loading
-      ? "Verificando acesso..."
-      : "Entrar no painel";
+  if (emailInput) {
+    emailInput.disabled = loading;
   }
 
-  emailInput.disabled = loading;
-  passwordInput.disabled = loading;
+  if (passwordInput) {
+    passwordInput.disabled = loading;
+  }
 
   if (rememberInput) {
     rememberInput.disabled = loading;
@@ -88,62 +85,7 @@ function setLoading(loading) {
 }
 
 /* =====================================================
-   VALIDAÇÃO DO ADMINISTRADOR
-===================================================== */
-
-async function getAdminProfile(uid) {
-  const adminReference = doc(
-    db,
-    "admins",
-    uid
-  );
-
-  const adminSnapshot = await getDoc(
-    adminReference
-  );
-
-  if (!adminSnapshot.exists()) {
-    return null;
-  }
-
-  return {
-    id: adminSnapshot.id,
-    ...adminSnapshot.data()
-  };
-}
-
-async function validateAdmin(user) {
-  const admin = await getAdminProfile(
-    user.uid
-  );
-
-  if (!admin) {
-    throw new Error("auth/not-admin");
-  }
-
-  if (admin.active !== true) {
-    throw new Error(
-      "auth/admin-disabled"
-    );
-  }
-
-  const allowedRoles = [
-    "owner",
-    "admin",
-    "editor"
-  ];
-
-  if (!allowedRoles.includes(admin.role)) {
-    throw new Error(
-      "auth/invalid-role"
-    );
-  }
-
-  return admin;
-}
-
-/* =====================================================
-   TRATAMENTO DE ERROS
+   ERROS AMIGÁVEIS
 ===================================================== */
 
 function getFriendlyError(error) {
@@ -157,7 +99,7 @@ function getFriendlyError(error) {
       "E-mail ou senha incorretos.",
 
     "auth/user-not-found":
-      "Nenhum usuário foi encontrado com este e-mail.",
+      "Usuário não encontrado.",
 
     "auth/wrong-password":
       "E-mail ou senha incorretos.",
@@ -165,77 +107,68 @@ function getFriendlyError(error) {
     "auth/invalid-email":
       "Digite um endereço de e-mail válido.",
 
-    "auth/user-disabled":
-      "Este usuário foi desativado.",
-
-    "auth/too-many-requests":
-      "Muitas tentativas foram realizadas. Aguarde alguns minutos e tente novamente.",
-
-    "auth/network-request-failed":
-      "Não foi possível conectar ao Firebase. Verifique sua conexão com a internet.",
+    "auth/missing-email":
+      "Digite seu e-mail.",
 
     "auth/missing-password":
       "Digite sua senha.",
 
-    "auth/missing-email":
-      "Digite seu e-mail.",
+    "auth/user-disabled":
+      "Este usuário está desativado.",
 
-    "auth/not-admin":
-      "Este usuário não possui autorização administrativa.",
+    "auth/too-many-requests":
+      "Muitas tentativas foram realizadas. Aguarde alguns minutos.",
 
-    "auth/admin-disabled":
-      "O acesso deste administrador está desativado.",
-
-    "auth/invalid-role":
-      "O usuário não possui uma função administrativa válida.",
-
-    "permission-denied":
-      "O Firebase recusou a consulta do administrador. Verifique as regras do Firestore.",
+    "auth/network-request-failed":
+      "Não foi possível conectar ao Firebase. Verifique sua internet.",
 
     "auth/operation-not-allowed":
-      "O login por e-mail e senha ainda não está ativado no Firebase."
+      "O acesso por e-mail e senha ainda não está ativado no Firebase.",
+
+    "auth/unauthorized-domain":
+      "Este domínio ainda não foi autorizado no Firebase."
   };
 
   return (
     errors[code] ||
-    "Não foi possível realizar o acesso. Tente novamente."
+    "Não foi possível entrar. Verifique os dados e tente novamente."
   );
 }
 
 /* =====================================================
-   EXIBIR OU OCULTAR SENHA
+   MOSTRAR SENHA
 ===================================================== */
 
 togglePassword?.addEventListener(
   "click",
   () => {
-    const passwordVisible =
-      passwordInput.type === "text";
+    const isPassword =
+      passwordInput.type === "password";
 
     passwordInput.type =
-      passwordVisible
-        ? "password"
-        : "text";
+      isPassword
+        ? "text"
+        : "password";
 
     togglePassword.textContent =
-      passwordVisible
-        ? "Mostrar"
-        : "Ocultar";
+      isPassword
+        ? "Ocultar"
+        : "Mostrar";
 
     togglePassword.setAttribute(
       "aria-label",
-      passwordVisible
-        ? "Mostrar senha"
-        : "Ocultar senha"
+      isPassword
+        ? "Ocultar senha"
+        : "Mostrar senha"
     );
   }
 );
 
 /* =====================================================
-   RECUPERAÇÃO DE SENHA
+   RECUPERAR SENHA
 ===================================================== */
 
-forgotPassword?.addEventListener(
+forgotPasswordButton?.addEventListener(
   "click",
   async () => {
     clearFeedback();
@@ -247,7 +180,7 @@ forgotPassword?.addEventListener(
 
     if (!email) {
       showFeedback(
-        "Digite seu e-mail para receber o link de redefinição."
+        "Digite seu e-mail antes de solicitar a recuperação."
       );
 
       emailInput.focus();
@@ -255,10 +188,10 @@ forgotPassword?.addEventListener(
     }
 
     try {
-      forgotPassword.disabled = true;
+      forgotPasswordButton.disabled = true;
 
       showFeedback(
-        "Enviando o link de redefinição...",
+        "Enviando link de recuperação...",
         "info"
       );
 
@@ -268,20 +201,21 @@ forgotPassword?.addEventListener(
       );
 
       showFeedback(
-        "Enviamos um link de redefinição para o e-mail informado.",
+        "O link de recuperação foi enviado para seu e-mail.",
         "success"
       );
     } catch (error) {
       console.error(
-        "Erro ao redefinir senha:",
+        "[LOGIN] Erro ao recuperar senha:",
         error
       );
 
       showFeedback(
-        getFriendlyError(error)
+        getFriendlyError(error),
+        "error"
       );
     } finally {
-      forgotPassword.disabled = false;
+      forgotPasswordButton.disabled = false;
     }
   }
 );
@@ -290,7 +224,7 @@ forgotPassword?.addEventListener(
    LOGIN
 ===================================================== */
 
-form?.addEventListener(
+loginForm?.addEventListener(
   "submit",
   async event => {
     event.preventDefault();
@@ -315,7 +249,7 @@ form?.addEventListener(
 
     if (!emailInput.validity.valid) {
       showFeedback(
-        "Digite um endereço de e-mail válido."
+        "Digite um e-mail válido."
       );
 
       emailInput.focus();
@@ -356,37 +290,27 @@ form?.addEventListener(
           password
         );
 
-      await validateAdmin(
-        credential.user
+      console.log(
+        "[LOGIN] Usuário autenticado:",
+        credential.user.uid
       );
 
       showFeedback(
-        "Acesso autorizado. Abrindo o painel...",
+        "Login realizado. Abrindo o painel...",
         "success"
       );
 
-      window.location.replace(
-        "./admin.html"
-      );
+      window.location.href =
+        "./admin.html";
     } catch (error) {
       console.error(
-        "Erro no login:",
+        "[LOGIN] Erro no login:",
         error
       );
 
-      if (auth.currentUser) {
-        try {
-          await signOut(auth);
-        } catch (signOutError) {
-          console.error(
-            "Erro ao encerrar sessão inválida:",
-            signOutError
-          );
-        }
-      }
-
       showFeedback(
-        getFriendlyError(error)
+        getFriendlyError(error),
+        "error"
       );
 
       setLoading(false);
@@ -395,49 +319,26 @@ form?.addEventListener(
 );
 
 /* =====================================================
-   VERIFICAÇÃO DE SESSÃO EXISTENTE
+   SESSÃO EXISTENTE
 ===================================================== */
 
 onAuthStateChanged(
   auth,
-  async user => {
-    if (initialSessionChecked) {
+  user => {
+    if (authChecked) {
       return;
     }
 
-    initialSessionChecked = true;
+    authChecked = true;
 
-    if (!user) {
-      return;
-    }
+    console.log(
+      "[LOGIN] Estado da autenticação:",
+      user?.uid || "sem usuário"
+    );
 
-    try {
-      showFeedback(
-        "Verificando sessão existente...",
-        "info"
-      );
-
-      await validateAdmin(user);
-
-      window.location.replace(
-        "./admin.html"
-      );
-    } catch (error) {
-      console.error(
-        "Sessão existente sem autorização:",
-        error
-      );
-
-      try {
-        await signOut(auth);
-      } catch (signOutError) {
-        console.error(
-          "Erro ao encerrar sessão:",
-          signOutError
-        );
-      }
-
-      clearFeedback();
+    if (user) {
+      window.location.href =
+        "./admin.html";
     }
   }
 );
