@@ -1,45 +1,50 @@
-const menuButton = document.querySelector('.menu-toggle');
-const menu = document.querySelector('.main-nav');
+const menuButton = document.querySelector(".menu-toggle");
+const menu = document.querySelector(".main-nav");
 
 function closeMenu() {
   if (!menuButton || !menu) return;
 
-  menuButton.classList.remove('active');
-  menu.classList.remove('open');
-  menuButton.setAttribute('aria-expanded', 'false');
-  document.body.classList.remove('menu-open');
+  menuButton.classList.remove("active");
+  menu.classList.remove("open");
+  menuButton.setAttribute("aria-expanded", "false");
+  document.body.classList.remove("menu-open");
 }
 
-menuButton?.addEventListener('click', () => {
+menuButton?.addEventListener("click", () => {
   if (!menu) return;
 
-  const isOpen = menu.classList.toggle('open');
-  menuButton.classList.toggle('active', isOpen);
-  menuButton.setAttribute('aria-expanded', String(isOpen));
-  document.body.classList.toggle('menu-open', isOpen);
+  const isOpen = menu.classList.toggle("open");
+
+  menuButton.classList.toggle("active", isOpen);
+  menuButton.setAttribute("aria-expanded", String(isOpen));
+  document.body.classList.toggle("menu-open", isOpen);
 });
 
-menu?.querySelectorAll('a').forEach((link) => {
-  link.addEventListener('click', closeMenu);
+menu?.querySelectorAll("a").forEach(link => {
+  link.addEventListener("click", closeMenu);
 });
 
-window.addEventListener('resize', () => {
-  if (window.innerWidth > 980) closeMenu();
+window.addEventListener("resize", () => {
+  if (window.innerWidth > 980) {
+    closeMenu();
+  }
 });
 
-const countdown = document.querySelector('.countdown');
+const countdown = document.querySelector(".countdown");
 
 if (countdown) {
   const targetDate = new Date(countdown.dataset.eventDate).getTime();
-  const daysElement = countdown.querySelector('[data-days]');
-  const hoursElement = countdown.querySelector('[data-hours]');
-  const minutesElement = countdown.querySelector('[data-minutes]');
-  const secondsElement = countdown.querySelector('[data-seconds]');
 
-  const format = (value) => String(value).padStart(2, '0');
+  const daysElement = countdown.querySelector("[data-days]");
+  const hoursElement = countdown.querySelector("[data-hours]");
+  const minutesElement = countdown.querySelector("[data-minutes]");
+  const secondsElement = countdown.querySelector("[data-seconds]");
+
+  const format = value => String(value).padStart(2, "0");
 
   function updateCountdown() {
     const distance = Math.max(0, targetDate - Date.now());
+
     const days = Math.floor(distance / 86400000);
     const hours = Math.floor((distance % 86400000) / 3600000);
     const minutes = Math.floor((distance % 3600000) / 60000);
@@ -55,22 +60,24 @@ if (countdown) {
   window.setInterval(updateCountdown, 1000);
 }
 
-const revealElements = document.querySelectorAll('.reveal');
+const revealElements = document.querySelectorAll(".reveal");
 
-if ('IntersectionObserver' in window) {
+if ("IntersectionObserver" in window) {
   const observer = new IntersectionObserver(
-    (entries) => {
-      entries.forEach((entry) => {
+    entries => {
+      entries.forEach(entry => {
         if (!entry.isIntersecting) return;
 
-        entry.target.classList.add('visible');
+        entry.target.classList.add("visible");
         observer.unobserve(entry.target);
       });
     },
-    { threshold: 0.12 }
+    {
+      threshold: 0.12
+    }
   );
 
-  revealElements.forEach((element) => observer.observe(element));
+  revealElements.forEach(element => observer.observe(element));
 } else {
-  revealElements.forEach((element) => element.classList.add('visible'));
+  revealElements.forEach(element => element.classList.add("visible"));
 }
