@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <meta
+    name="description"
+    content="Galeria do Chá da Iúna — lembranças da espera, da família em Bagé e dos amigos em Porto Alegre."
+  >
+
+  <meta name="theme-color" content="#78559b">
+
+  <title>Galeria | Chá da Iúna</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap"
+    rel="stylesheet"
+  >
+
+  <link rel="stylesheet" href="./assets/css/style.css">
+  <link rel="stylesheet" href="./assets/css/galeria.css">
+</head>
+
+<body>
+  <a class="skip-link" href="#conteudo">
+    Ir para o conteúdo
+  </a>
+
+  <header class="site-header" id="inicio">
+    <div class="container header-inner">
+      <a
+        class="brand"
+        href="./index.html"
+        aria-label="Voltar à página inicial do Chá da Iúna"
+      >
+        <span class="brand-symbol" aria-hidden="true">
+          I
+        </span>
+
+        <span>
+          <strong>Chá da Iúna</strong>
+          <small>duas cidades, um só amor</small>
+        </span>
+      </a>
+
+      <button
+        class="menu-toggle"
+        type="button"
+        aria-label="Abrir menu"
+        aria-expanded="false"
+        aria-controls="menu-principal"
+      >
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+
+      <nav
+        class="main-nav"
+        id="menu-principal"
+        aria-label="Navegação principal"
+      >
+        <a href="./index.html">
+          Início
+        </a>
+
+        <a href="./index.html#celebracoes">
+          As celebrações
+        </a>
+
+        <a href="./recadinhos.html">
+          Recadinhos
+        </a>
+
+        <a href="./index.html#enviar-fotos">
+          Enviar fotos
+        </a>
+
+        <a
+          class="nav-admin"
+          href="./login.html"
+        >
+          Área dos pais
+        </a>
+
+        <a
+          class="nav-cta"
+          href="./confirmar-presenca.html"
+        >
+          Confirmar presença
+        </a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="conteudo">
+    <section class="gallery-hero">
+      <span
+        class="gallery-shape gallery-shape-one"
+        aria-hidden="true"
+      ></span>
+
+      <span
+        class="gallery-shape gallery-shape-two"
+        aria-hidden="true"
+      ></span>
+
+      <div class="container gallery-hero-inner">
+        <div class="gallery-hero-copy reveal">
+          <p class="eyebrow">
+            Nosso álbum de carinho
+          </p>
+
+          <h1>
+            Memórias para a Iúna
+            <em>guardar para sempre.</em>
+          </h1>
+
+          <p>
+            Este é o nosso cantinho para reunir registros da espera,
+            dos preparativos, da família em Bagé, dos amigos em Porto
+            Alegre e de todos os momentos que fazem parte desta história.
+          </p>
+
+          <div class="gallery-hero-actions">
+            <a
+              class="button button-primary"
+              href="./index.html#enviar-fotos"
+            >
+              Enviar uma foto
+            </a>
+
+            <a
+              class="button button-secondary"
+              href="./index.html"
+            >
+              Voltar à página inicial
+            </a>
+          </div>
+        </div>
+
+        <div
+          class="gallery-hero-art reveal"
+          aria-hidden="true"
+        >
+          <div class="memory-card memory-card-one">
+            <span>família</span>
+          </div>
+
+          <div class="memory-card memory-card-two">
+            <span>amigos</span>
+          </div>
+
+          <div class="memory-card memory-card-three">
+            <span>carinho</span>
+          </div>
+
+          <span class="gallery-heart">
+            ♥
+          </span>
+        </div>
+      </div>
+    </section>
+
+    <section class="gallery-content-section">
+      <div class="container">
+        <div class="gallery-toolbar reveal">
+          <div>
+            <p class="eyebrow">
+              Escolha um momento
+            </p>
+
+            <h2>
+              Cada fotografia conta um pedacinho da nossa história.
+            </h2>
+          </div>
+
+          <div
+            class="gallery-counter"
+            aria-live="polite"
+          >
+            <strong id="galleryCount">
+              0
+            </strong>
+
+            <span>
+              fotos publicadas
+            </span>
+          </div>
+        </div>
+
+        <div
+          class="gallery-filters reveal"
+          role="group"
+          aria-label="Filtrar fotos por momento"
+        >
+          <button
+            class="gallery-filter active"
+            type="button"
+            data-filter="all"
+            aria-pressed="true"
+          >
+            Todas
+          </button>
+
+          <button
+            class="gallery-filter"
+            type="button"
+            data-filter="nossa-espera"
+            aria-pressed="false"
+          >
+            Nossa espera
+          </button>
+
+          <button
+            class="gallery-filter"
+            type="button"
+            data-filter="preparativos"
+            aria-pressed="false"
+          >
+            Preparativos
+          </button>
+
+          <button
+            class="gallery-filter"
+            type="button"
+            data-filter="bage"
+            aria-pressed="false"
+          >
+            Bagé
+          </button>
+
+          <button
+            class="gallery-filter"
+            type="button"
+            data-filter="porto-alegre"
+            aria-pressed="false"
+          >
+            Porto Alegre
+          </button>
+
+          <button
+            class="gallery-filter"
+            type="button"
+            data-filter="familia"
+            aria-pressed="false"
+          >
+            Família
+          </button>
+
+          <button
+            class="gallery-filter"
+            type="button"
+            data-filter="amigos"
+            aria-pressed="false"
+          >
+            Amigos
+          </button>
+        </div>
+
+        <div
+          class="gallery-status"
+          id="galleryStatus"
+          role="status"
+          aria-live="polite"
+        >
+          <div class="gallery-loader" aria-hidden="true"></div>
+
+          <p>
+            Carregando nossas lembranças...
+          </p>
+        </div>
+
+        <div
+          class="gallery-grid"
+          id="galleryGrid"
+          aria-live="polite"
+        ></div>
+
+        <div
+          class="gallery-empty"
+          id="galleryEmpty"
+          hidden
+        >
+          <span aria-hidden="true">
+            ♡
+          </span>
+
+          <h3>
+            Ainda não há fotos nesta categoria.
+          </h3>
+
+          <p>
+            As fotografias aprovadas pelos pais aparecerão aqui.
+          </p>
+
+          <a
+            class="button button-primary"
+            href="./index.html#enviar-fotos"
+          >
+            Compartilhar uma lembrança
+          </a>
+        </div>
+
+        <div
+          class="gallery-load-more"
+          id="galleryLoadMore"
+          hidden
+        >
+          <button
+            class="button button-secondary"
+            id="loadMoreButton"
+            type="button"
+          >
+            Mostrar mais fotos
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <section class="gallery-invitation-section">
+      <div class="container">
+        <div class="gallery-invitation-card reveal">
+          <div>
+            <p class="eyebrow">
+              Ajude a contar esta história
+            </p>
+
+            <h2>
+              Tem uma lembrança bonita conosco?
+            </h2>
+
+            <p>
+              Compartilhe uma fotografia, escreva uma legenda e ajude
+              a construir o álbum que a Iúna poderá conhecer quando crescer.
+            </p>
+          </div>
+
+          <a
+            class="button button-light"
+            href="./index.html#enviar-fotos"
+          >
+            Enviar minhas fotos
+          </a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div
+    class="gallery-lightbox"
+    id="galleryLightbox"
+    hidden
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="lightboxTitle"
+  >
+    <div
+      class="gallery-lightbox-backdrop"
+      data-lightbox-close
+    ></div>
+
+    <div class="gallery-lightbox-dialog">
+      <button
+        class="lightbox-close"
+        type="button"
+        aria-label="Fechar fotografia"
+        data-lightbox-close
+      >
+        ×
+      </button>
+
+      <button
+        class="lightbox-navigation lightbox-previous"
+        id="lightboxPrevious"
+        type="button"
+        aria-label="Ver fotografia anterior"
+      >
+        ‹
+      </button>
+
+      <figure class="lightbox-figure">
+        <div class="lightbox-image-wrap">
+          <img
+            id="lightboxImage"
+            src=""
+            alt=""
+          >
+        </div>
+
+        <figcaption>
+          <span
+            class="lightbox-category"
+            id="lightboxCategory"
+          ></span>
+
+          <h2 id="lightboxTitle">
+            Lembrança da Iúna
+          </h2>
+
+          <p id="lightboxCaption"></p>
+
+          <div class="lightbox-sender">
+            <span>
+              Enviada com carinho por
+            </span>
+
+            <strong id="lightboxSender"></strong>
+          </div>
+        </figcaption>
+      </figure>
+
+      <button
+        class="lightbox-navigation lightbox-next"
+        id="lightboxNext"
+        type="button"
+        aria-label="Ver próxima fotografia"
+      >
+        ›
+      </button>
+    </div>
+  </div>
+
+  <footer class="site-footer">
+    <div class="container footer-main">
+      <div class="footer-about">
+        <div class="brand footer-brand">
+          <span
+            class="brand-symbol"
+            aria-hidden="true"
+          >
+            I
+          </span>
+
+          <span>
+            <strong>Chá da Iúna</strong>
+            <small>Bagé + Porto Alegre</small>
+          </span>
+        </div>
+
+        <p>
+          Duas celebrações feitas com amor para receber uma nova vida.
+        </p>
+      </div>
+
+      <nav
+        class="footer-links"
+        aria-label="Links do rodapé"
+      >
+        <a href="./index.html">
+          Início
+        </a>
+
+        <a href="./index.html#celebracoes">
+          As celebrações
+        </a>
+
+        <a href="./recadinhos.html">
+          Recadinhos
+        </a>
+
+        <a href="./index.html#enviar-fotos">
+          Enviar fotos
+        </a>
+      </nav>
+
+      <nav
+        class="footer-links"
+        aria-label="Mais links"
+      >
+        <a href="./confirmar-presenca.html">
+          Confirmar presença
+        </a>
+
+        <a href="./login.html">
+          Área dos pais
+        </a>
+
+        <a href="#inicio">
+          Voltar ao topo
+        </a>
+      </nav>
+    </div>
+
+    <div class="container footer-bottom">
+      <p>
+        Feito com amor pelos pais da Iúna.
+      </p>
+
+      <a href="./index.html">
+        Voltar para o início
+      </a>
+    </div>
+  </footer>
+
+  <script
+    type="module"
+    src="./assets/js/app.js"
+  ></script>
+
+  <script
+    type="module"
+    src="./assets/js/galeria.js"
+  ></script>
+</body>
+</html>
