@@ -1,0 +1,17 @@
+{
+  "name": "cha-iuna",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Site oficial do Chá da Iúna",
+  "scripts": {
+    "dev": "parcel src/index.html --open",
+    "build": "parcel build src/index.html --dist-dir dist --public-url ./",
+    "clean": "rimraf .parcel-cache dist",
+    "start": "npm run dev"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "parcel": "^2.16.4",
+    "rimraf": "^6.1.3"
+  }
+}
