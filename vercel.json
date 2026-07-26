@@ -1,0 +1,15 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "rewrites": [
+    {
+      "source": "/area-dos-pais",
+      "destination": "/login.html"
+    },
+    {
+      "source": "/painel",
+      "destination": "/admin.html"
+    }
+  ]
+}
