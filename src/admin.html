@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#76549b">
+  <title>Painel dos Pais | Chá da Iúna</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./assets/css/admin.css">
+</head>
+<body class="admin-page">
+  <div class="admin-layout">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-head">
+        <a class="sidebar-brand" href="./index.html">
+          <span class="brand-mark">I</span>
+          <span><strong>Chá da Iúna</strong><small>painel dos pais</small></span>
+        </a>
+        <button class="sidebar-close" id="sidebarClose" type="button" aria-label="Fechar menu">×</button>
+      </div>
+
+      <nav class="sidebar-nav" aria-label="Menu administrativo">
+        <button class="nav-item active" type="button" data-view="dashboard">
+          <span class="nav-icon">⌂</span><span>Visão geral</span>
+        </button>
+        <button class="nav-item" type="button" data-view="guests">
+          <span class="nav-icon">♧</span><span>Convidados</span><small id="guestBadge">0</small>
+        </button>
+        <button class="nav-item" type="button" data-view="gallery">
+          <span class="nav-icon">▧</span><span>Galeria</span>
+        </button>
+        <button class="nav-item" type="button" data-view="gifts">
+          <span class="nav-icon">□</span><span>Presentes</span>
+        </button>
+        <button class="nav-item" type="button" data-view="party">
+          <span class="nav-icon">✓</span><span>Gestão da festa</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="event-mini-card">
+          <span>Próximo evento</span>
+          <strong>05 set. 2026</strong>
+          <small>15h • Bagé/RS</small>
+        </div>
+        <button class="nav-item logout-button" id="logoutButton" type="button">
+          <span class="nav-icon">↪</span><span>Sair</span>
+        </button>
+      </div>
+    </aside>
+
+    <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+    <main class="admin-main">
+      <header class="admin-header">
+        <div class="header-left">
+          <button class="menu-button" id="menuButton" type="button" aria-label="Abrir menu">☰</button>
+          <div>
+            <span class="header-date" id="currentDate"></span>
+            <h1 id="pageTitle">Visão geral</h1>
+          </div>
+        </div>
+        <div class="header-actions">
+          <a class="visit-site" href="./index.html" target="_blank" rel="noopener">Ver site público ↗</a>
+          <button class="profile-button" type="button" aria-label="Perfil dos pais">
+            <span>PI</span>
+            <span class="profile-copy"><strong>Pais da Iúna</strong><small>Administradores</small></span>
+          </button>
+        </div>
+      </header>
+
+      <div class="admin-content">
+        <section class="view active" id="view-dashboard" data-view-panel="dashboard">
+          <div class="welcome-card">
+            <div>
+              <p class="eyebrow">Boa organização</p>
+              <h2>Olá, família da Iúna! 💜</h2>
+              <p>Faltam <strong id="daysUntilEvent">0 dias</strong> para o nosso encontro. Vamos deixar tudo prontinho?</p>
+            </div>
+            <button class="primary-button" type="button" data-go-view="party">Ver planejamento</button>
+          </div>
+
+          <div class="stats-grid">
+            <article class="stat-card">
+              <span class="stat-icon lilac">♧</span>
+              <div><small>Convidados</small><strong id="statGuests">0</strong><span id="statConfirmed">0 confirmados</span></div>
+            </article>
+            <article class="stat-card">
+              <span class="stat-icon green">▧</span>
+              <div><small>Fotos na galeria</small><strong id="statPhotos">0</strong><span>itens publicados</span></div>
+            </article>
+            <article class="stat-card">
+              <span class="stat-icon yellow">□</span>
+              <div><small>Presentes</small><strong id="statGifts">0</strong><span id="statReserved">0 reservados</span></div>
+            </article>
+            <article class="stat-card">
+              <span class="stat-icon coral">✓</span>
+              <div><small>Tarefas</small><strong id="statTasks">0</strong><span id="statDone">0 concluídas</span></div>
+            </article>
+          </div>
+
+          <div class="dashboard-grid">
+            <section class="panel">
+              <div class="panel-head">
+                <div><p class="eyebrow">Presenças</p><h3>Resumo dos convidados</h3></div>
+                <button class="text-button" type="button" data-go-view="guests">Gerenciar</button>
+              </div>
+              <div class="attendance-layout">
+                <div class="donut" id="attendanceDonut"><span id="attendancePercent">0%</span></div>
+                <div class="legend">
+                  <span><i class="dot confirmed"></i>Confirmados <strong id="legendConfirmed">0</strong></span>
+                  <span><i class="dot pending"></i>Aguardando <strong id="legendPending">0</strong></span>
+                  <span><i class="dot declined"></i>Não irão <strong id="legendDeclined">0</strong></span>
+                </div>
+              </div>
+            </section>
+
+            <section class="panel">
+              <div class="panel-head">
+                <div><p class="eyebrow">Próximos passos</p><h3>Tarefas prioritárias</h3></div>
+                <button class="text-button" type="button" data-go-view="party">Ver todas</button>
+              </div>
+              <div class="priority-list" id="priorityList"></div>
+            </section>
+          </div>
+        </section>
+
+        <section class="view" id="view-guests" data-view-panel="guests">
+          <div class="view-toolbar">
+            <div><p class="eyebrow">Lista de convidados</p><h2>Gerencie presenças e acompanhantes</h2></div>
+            <button class="primary-button" type="button" data-open-modal="guestModal">+ Novo convidado</button>
+          </div>
+
+          <div class="filter-bar">
+            <label class="search-field"><span>⌕</span><input id="guestSearch" type="search" placeholder="Buscar por nome ou telefone"></label>
+            <select id="guestStatusFilter" aria-label="Filtrar convidados por status">
+              <option value="all">Todos os status</option>
+              <option value="confirmed">Confirmados</option>
+              <option value="pending">Aguardando</option>
+              <option value="declined">Não irão</option>
+            </select>
+          </div>
+
+          <section class="panel table-panel">
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Convidado</th><th>Contato</th><th>Grupo</th><th>Pessoas</th><th>Status</th><th>Ações</th></tr></thead>
+                <tbody id="guestTableBody"></tbody>
+              </table>
+            </div>
+            <div class="empty-state" id="guestEmpty" hidden>Nenhum convidado encontrado.</div>
+          </section>
+        </section>
+
+        <section class="view" id="view-gallery" data-view-panel="gallery">
+          <div class="view-toolbar">
+            <div><p class="eyebrow">Galeria</p><h2>Cuide das memórias exibidas no site</h2></div>
+            <button class="primary-button" type="button" data-open-modal="photoModal">+ Adicionar foto</button>
+          </div>
+          <div class="gallery-admin-grid" id="galleryGrid"></div>
+          <div class="empty-state card-empty" id="galleryEmpty" hidden>Nenhuma foto adicionada.</div>
+        </section>
+
+        <section class="view" id="view-gifts" data-view-panel="gifts">
+          <div class="view-toolbar">
+            <div><p class="eyebrow">Lista de presentes</p><h2>Organize sugestões e reservas</h2></div>
+            <button class="primary-button" type="button" data-open-modal="giftModal">+ Novo presente</button>
+          </div>
+          <div class="gift-summary" id="giftSummary"></div>
+          <section class="panel table-panel">
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Presente</th><th>Categoria</th><th>Faixa de preço</th><th>Prioridade</th><th>Situação</th><th>Ações</th></tr></thead>
+                <tbody id="giftTableBody"></tbody>
+              </table>
+            </div>
+          </section>
+        </section>
+
+        <section class="view" id="view-party" data-view-panel="party">
+          <div class="view-toolbar">
+            <div><p class="eyebrow">Gestão da festa</p><h2>Planejamento, tarefas e orçamento</h2></div>
+            <button class="primary-button" type="button" data-open-modal="taskModal">+ Nova tarefa</button>
+          </div>
+
+          <div class="party-summary">
+            <article class="summary-card"><small>Orçamento previsto</small><strong id="budgetPlanned">R$ 0,00</strong></article>
+            <article class="summary-card"><small>Total realizado</small><strong id="budgetSpent">R$ 0,00</strong></article>
+            <article class="summary-card"><small>Saldo disponível</small><strong id="budgetBalance">R$ 0,00</strong></article>
+          </div>
+
+          <div class="dashboard-grid party-grid">
+            <section class="panel">
+              <div class="panel-head"><div><p class="eyebrow">Checklist</p><h3>Tarefas da festa</h3></div></div>
+              <div class="task-list" id="taskList"></div>
+            </section>
+
+            <section class="panel">
+              <div class="panel-head"><div><p class="eyebrow">Orçamento</p><h3>Controle financeiro</h3></div><button class="text-button" type="button" id="editBudgetButton">Editar limite</button></div>
+              <div class="budget-progress">
+                <div><span>Utilizado</span><strong id="budgetPercent">0%</strong></div>
+                <div class="progress-track"><span id="budgetProgressBar"></span></div>
+              </div>
+              <div class="expense-list" id="expenseList"></div>
+              <button class="secondary-button full-button" type="button" data-open-modal="expenseModal">+ Adicionar despesa</button>
+            </section>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <div class="modal" id="guestModal" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-head"><div><p class="eyebrow">Convidados</p><h3 id="guestModalTitle">Novo convidado</h3></div><button class="modal-close" type="button">×</button></div>
+      <form id="guestForm" class="modal-form">
+        <input id="guestId" type="hidden">
+        <label><span>Nome completo</span><input id="guestName" required></label>
+        <div class="form-grid">
+          <label><span>Telefone</span><input id="guestPhone" placeholder="(00) 00000-0000"></label>
+          <label><span>Grupo</span><select id="guestGroup"><option>Família</option><option>Amigos</option><option>Trabalho</option><option>Capoeira</option><option>Outro</option></select></label>
+        </div>
+        <div class="form-grid">
+          <label><span>Total de pessoas</span><input id="guestPeople" type="number" min="1" value="1"></label>
+          <label><span>Status</span><select id="guestStatus"><option value="pending">Aguardando</option><option value="confirmed">Confirmado</option><option value="declined">Não irá</option></select></label>
+        </div>
+        <label><span>Observações</span><textarea id="guestNotes" rows="3" placeholder="Crianças, restrições alimentares ou recados"></textarea></label>
+        <div class="modal-actions"><button class="secondary-button modal-cancel" type="button">Cancelar</button><button class="primary-button" type="submit">Salvar convidado</button></div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal" id="photoModal" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-head"><div><p class="eyebrow">Galeria</p><h3>Adicionar foto</h3></div><button class="modal-close" type="button">×</button></div>
+      <form id="photoForm" class="modal-form">
+        <label><span>Título</span><input id="photoTitle" required placeholder="Ex.: Nosso primeiro ultrassom"></label>
+        <label><span>Endereço da imagem</span><input id="photoUrl" type="url" placeholder="https://..."></label>
+        <label><span>Descrição</span><textarea id="photoDescription" rows="3"></textarea></label>
+        <label class="check-field"><input id="photoPublished" type="checkbox" checked><span>Publicar no site</span></label>
+        <div class="modal-actions"><button class="secondary-button modal-cancel" type="button">Cancelar</button><button class="primary-button" type="submit">Adicionar foto</button></div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal" id="giftModal" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-head"><div><p class="eyebrow">Presentes</p><h3>Novo presente</h3></div><button class="modal-close" type="button">×</button></div>
+      <form id="giftForm" class="modal-form">
+        <label><span>Nome do presente</span><input id="giftName" required></label>
+        <div class="form-grid">
+          <label><span>Categoria</span><select id="giftCategory"><option>Fraldas</option><option>Higiene</option><option>Roupas</option><option>Quarto</option><option>Alimentação</option><option>Outro</option></select></label>
+          <label><span>Faixa de preço</span><input id="giftPrice" placeholder="Ex.: R$ 50 a R$ 90"></label>
+        </div>
+        <div class="form-grid">
+          <label><span>Prioridade</span><select id="giftPriority"><option value="high">Alta</option><option value="medium">Média</option><option value="low">Baixa</option></select></label>
+          <label><span>Situação</span><select id="giftStatus"><option value="available">Disponível</option><option value="reserved">Reservado</option><option value="received">Recebido</option></select></label>
+        </div>
+        <label><span>Link opcional</span><input id="giftLink" type="url" placeholder="https://..."></label>
+        <div class="modal-actions"><button class="secondary-button modal-cancel" type="button">Cancelar</button><button class="primary-button" type="submit">Salvar presente</button></div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal" id="taskModal" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-head"><div><p class="eyebrow">Planejamento</p><h3>Nova tarefa</h3></div><button class="modal-close" type="button">×</button></div>
+      <form id="taskForm" class="modal-form">
+        <label><span>Tarefa</span><input id="taskTitle" required></label>
+        <div class="form-grid">
+          <label><span>Responsável</span><input id="taskOwner" placeholder="Ex.: Sizenando"></label>
+          <label><span>Prazo</span><input id="taskDueDate" type="date"></label>
+        </div>
+        <label><span>Prioridade</span><select id="taskPriority"><option value="high">Alta</option><option value="medium">Média</option><option value="low">Baixa</option></select></label>
+        <div class="modal-actions"><button class="secondary-button modal-cancel" type="button">Cancelar</button><button class="primary-button" type="submit">Adicionar tarefa</button></div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal" id="expenseModal" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-head"><div><p class="eyebrow">Orçamento</p><h3>Adicionar despesa</h3></div><button class="modal-close" type="button">×</button></div>
+      <form id="expenseForm" class="modal-form">
+        <label><span>Descrição</span><input id="expenseName" required></label>
+        <div class="form-grid">
+          <label><span>Categoria</span><select id="expenseCategory"><option>Alimentação</option><option>Decoração</option><option>Local</option><option>Lembrancinhas</option><option>Fotografia</option><option>Outros</option></select></label>
+          <label><span>Valor</span><input id="expenseAmount" type="number" min="0" step="0.01" required></label>
+        </div>
+        <div class="modal-actions"><button class="secondary-button modal-cancel" type="button">Cancelar</button><button class="primary-button" type="submit">Salvar despesa</button></div>
+      </form>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script type="module" src="./assets/js/admin.js"></script>
+</body>
+</html>
