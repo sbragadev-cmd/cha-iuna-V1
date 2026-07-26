@@ -2,80 +2,225 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Acesso reservado aos pais para administrar o Chá da Iúna.">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <meta
+    name="description"
+    content="Acesso reservado aos pais para administrar o Chá da Iúna."
+  >
+
   <meta name="theme-color" content="#76549b">
+
   <title>Área dos Pais | Chá da Iúna</title>
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./assets/css/admin.css">
+
+  <link
+    rel="preconnect"
+    href="https://fonts.gstatic.com"
+    crossorigin
+  >
+
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap"
+    rel="stylesheet"
+  >
+
+  <link
+    rel="stylesheet"
+    href="./assets/css/admin.css"
+  >
 </head>
+
 <body class="auth-page">
   <main class="auth-shell">
-    <section class="auth-art" aria-label="Boas-vindas">
-      <a class="auth-brand" href="./index.html">
-        <span class="brand-mark">I</span>
-        <span><strong>Chá da Iúna</strong><small>área reservada dos pais</small></span>
+    <section
+      class="auth-art"
+      aria-label="Boas-vindas à área administrativa"
+    >
+      <a
+        class="auth-brand"
+        href="./index.html"
+        aria-label="Voltar para a página inicial"
+      >
+        <span
+          class="brand-mark"
+          aria-hidden="true"
+        >
+          I
+        </span>
+
+        <span>
+          <strong>Chá da Iúna</strong>
+          <small>área reservada dos pais</small>
+        </span>
       </a>
 
       <div class="auth-message">
-        <span class="auth-kicker">Organização com carinho</span>
-        <h1>Cada detalhe da festa em um só lugar.</h1>
-        <p>Convidados, presentes, galeria e planejamento reunidos em um painel simples e acolhedor.</p>
+        <span class="auth-kicker">
+          Organização com carinho
+        </span>
+
+        <h1>
+          Cada detalhe da festa em um só lugar.
+        </h1>
+
+        <p>
+          Convidados, presentes, galeria e planejamento
+          reunidos em um painel simples, seguro e acolhedor.
+        </p>
       </div>
 
-      <div class="auth-decoration" aria-hidden="true">
+      <div
+        class="auth-decoration"
+        aria-hidden="true"
+      >
         <span class="sun"></span>
+
         <span class="hill hill-one"></span>
+
         <span class="hill hill-two"></span>
-        <span class="flower flower-one">✿</span>
-        <span class="flower flower-two">✿</span>
-        <span class="flower flower-three">✿</span>
+
+        <span class="flower flower-one">
+          ✿
+        </span>
+
+        <span class="flower flower-two">
+          ✿
+        </span>
+
+        <span class="flower flower-three">
+          ✿
+        </span>
       </div>
     </section>
 
-    <section class="auth-panel">
+    <section
+      class="auth-panel"
+      aria-labelledby="login-title"
+    >
       <div class="auth-card">
-        <a class="back-link" href="./index.html">← Voltar ao site</a>
-        <p class="eyebrow">Acesso seguro</p>
-        <h2>Entrar na área dos pais</h2>
-        <p class="auth-intro">Use o e-mail cadastrado para acessar o painel administrativo.</p>
+        <a
+          class="back-link"
+          href="./index.html"
+        >
+          ← Voltar ao site
+        </a>
 
-        <form id="loginForm" class="auth-form" novalidate>
-          <label>
+        <p class="eyebrow">
+          Acesso seguro
+        </p>
+
+        <h2 id="login-title">
+          Entrar na área dos pais
+        </h2>
+
+        <p class="auth-intro">
+          Use o e-mail cadastrado no Firebase para acessar
+          o painel administrativo do Chá da Iúna.
+        </p>
+
+        <form
+          id="loginForm"
+          class="auth-form"
+          novalidate
+        >
+          <label for="email">
             <span>E-mail</span>
-            <input id="email" name="email" type="email" autocomplete="email" placeholder="seuemail@exemplo.com" required>
+
+            <input
+              id="email"
+              name="email"
+              type="email"
+              autocomplete="email"
+              inputmode="email"
+              placeholder="seuemail@exemplo.com"
+              required
+            >
           </label>
 
-          <label>
+          <label for="password">
             <span>Senha</span>
+
             <div class="password-field">
-              <input id="password" name="password" type="password" autocomplete="current-password" placeholder="Digite sua senha" minlength="6" required>
-              <button id="togglePassword" type="button" aria-label="Mostrar senha">Mostrar</button>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                autocomplete="current-password"
+                placeholder="Digite sua senha"
+                minlength="6"
+                required
+              >
+
+              <button
+                id="togglePassword"
+                type="button"
+                aria-label="Mostrar senha"
+              >
+                Mostrar
+              </button>
             </div>
           </label>
 
           <div class="form-row">
             <label class="check-field">
-              <input id="remember" type="checkbox">
-              <span>Manter conectado</span>
+              <input
+                id="remember"
+                name="remember"
+                type="checkbox"
+              >
+
+              <span>
+                Manter conectado
+              </span>
             </label>
-            <button class="link-button" type="button" id="forgotPassword">Esqueci minha senha</button>
+
+            <button
+              class="link-button"
+              type="button"
+              id="forgotPassword"
+            >
+              Esqueci minha senha
+            </button>
           </div>
 
-          <button class="primary-button full-button" type="submit">
-            <span>Entrar no painel</span>
+          <button
+            class="primary-button full-button"
+            type="submit"
+          >
+            <span>
+              Entrar no painel
+            </span>
           </button>
 
-          <div id="loginFeedback" class="form-feedback" role="status" aria-live="polite"></div>
+          <div
+            id="loginFeedback"
+            class="form-feedback"
+            role="status"
+            aria-live="polite"
+          ></div>
         </form>
 
-       
+        <div class="auth-security-note">
+          <span aria-hidden="true">✓</span>
+
+          <p>
+            O acesso é protegido pelo Firebase Authentication
+            e permitido somente para administradores cadastrados.
+          </p>
+        </div>
       </div>
     </section>
   </main>
 
-  <script type="module" src="./assets/js/login.js"></script>
+  <script
+    type="module"
+    src="./assets/js/login.js"
+  ></script>
 </body>
 </html>
