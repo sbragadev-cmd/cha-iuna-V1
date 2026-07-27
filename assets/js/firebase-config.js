@@ -11,10 +11,6 @@ import {
   getFirestore
 } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 
-import {
-  getStorage
-} from "https://www.gstatic.com/firebasejs/12.2.1/firebase-storage.js";
-
 const firebaseConfig = {
   apiKey: "AIzaSyDwn2pB-P8Vb-Z-qPGrpu7p01NTmxpa7Xs",
   authDomain: "iuna-e113d.firebaseapp.com",
@@ -30,7 +26,6 @@ const app = getApps().length
 
 const auth = getAuth(app);
 const db = getFirestore(app);
-const storage = getStorage(app);
 
 console.log("[FIREBASE] Inicializado:", {
   projectId: app.options.projectId,
@@ -40,6 +35,5 @@ console.log("[FIREBASE] Inicializado:", {
 export {
   app,
   auth,
-  db,
-  storage
+  db
 };
