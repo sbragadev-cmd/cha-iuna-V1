@@ -35,17 +35,16 @@ function normalizeText(value = "") {
   return String(value).trim();
 }
 
+function normalizeRole(value = "") {
+  return String(value).trim().toLowerCase();
+}
+
 function setFieldError(fieldId, message = "") {
   const field = document.querySelector(`#${fieldId}`);
   const error = document.querySelector(`#${fieldId}Error`);
 
-  if (field) {
-    field.setAttribute("aria-invalid", message ? "true" : "false");
-  }
-
-  if (error) {
-    error.textContent = message;
-  }
+  if (field) field.setAttribute("aria-invalid", message ? "true" : "false");
+  if (error) error.textContent = message;
 }
 
 function clearLoginErrors() {
@@ -66,13 +65,6 @@ function isValidEmail(value) {
 }
 
 function getRedirectTarget() {
-  const params = new URLSearchParams(window.location.search);
-  const redirect = params.get("redirect");
-
-  if (redirect === "admin") {
-    return "./admin.html";
-  }
-
   return "./admin.html";
 }
 
@@ -87,33 +79,68 @@ function translateAuthError(error) {
       "Muitas tentativas foram realizadas. Aguarde alguns minutos.",
     "auth/network-request-failed":
       "Não foi possível conectar. Verifique sua internet.",
-    "auth/missing-password": "Digite sua senha.",
-    "auth/weak-password": "A senha informada é muito curta."
+    "auth/missing-password": "Digite sua senha."
   };
 
-  return (
-    messages[error?.code] ||
-    "Não foi possível entrar agora. Tente novamente em instantes."
-  );
+  return messages[error?.code]
+    || "Não foi possível entrar agora. Tente novamente em instantes.";
 }
 
 async function validateAdminUser(user) {
-  const snapshot = await getDoc(doc(db, "admins", user.uid));
+  const adminRef = doc(db, "admins", user.uid);
+  const snapshot = await getDoc(adminRef);
 
   if (!snapshot.exists()) {
-    throw new Error("ADMIN_NOT_FOUND");
+    console.error("[LOGIN] Documento admin não encontrado.", {
+      uidAutenticado: user.uid,
+      emailAutenticado: user.email,
+      caminhoEsperado: `admins/${user.uid}`
+    });
+
+    const error = new Error("ADMIN_NOT_FOUND");
+    error.details = { uid: user.uid, email: user.email };
+    throw error;
   }
 
   const adminData = snapshot.data();
+  const active = adminData.active === true;
+  const role = normalizeRole(adminData.role);
+  const allowedRoles = ["owner", "admin", "editor"];
 
-  if (
-    adminData.active !== true ||
-    !["owner", "admin", "editor"].includes(adminData.role)
-  ) {
-    throw new Error("ADMIN_INACTIVE");
+  console.info("[LOGIN] Documento administrativo encontrado.", {
+    uidAutenticado: user.uid,
+    emailAutenticado: user.email,
+    activeOriginal: adminData.active,
+    activeType: typeof adminData.active,
+    roleOriginal: adminData.role,
+    roleNormalizada: role,
+    projectId: db.app.options.projectId
+  });
+
+  if (!active) {
+    const error = new Error("ADMIN_INACTIVE");
+    error.details = {
+      reason: "ACTIVE_NOT_BOOLEAN_TRUE",
+      activeValue: adminData.active,
+      activeType: typeof adminData.active
+    };
+    throw error;
   }
 
-  return adminData;
+  if (!allowedRoles.includes(role)) {
+    const error = new Error("ADMIN_ROLE_INVALID");
+    error.details = {
+      reason: "ROLE_NOT_ALLOWED",
+      roleOriginal: adminData.role,
+      roleNormalizada: role
+    };
+    throw error;
+  }
+
+  return {
+    ...adminData,
+    role
+  };
 }
 
 function validateLoginForm() {
@@ -121,7 +148,6 @@ function validateLoginForm() {
 
   const email = normalizeText(emailInput.value).toLowerCase();
   const password = passwordInput.value;
-
   let valid = true;
 
   if (!isValidEmail(email)) {
@@ -159,11 +185,12 @@ async function handleLogin(event) {
   setSubmitting(form, true);
 
   try {
-    const persistence = rememberInput.checked
-      ? browserLocalPersistence
-      : browserSessionPersistence;
-
-    await setPersistence(auth, persistence);
+    await setPersistence(
+      auth,
+      rememberInput.checked
+        ? browserLocalPersistence
+        : browserSessionPersistence
+    );
 
     const credential = await signInWithEmailAndPassword(
       auth,
@@ -175,19 +202,24 @@ async function handleLogin(event) {
     feedback.classList.add("is-success");
 
     await validateAdminUser(credential.user);
-
     window.location.replace(getRedirectTarget());
   } catch (error) {
-    console.error("[LOGIN] Erro ao autenticar:", error);
+    console.error("[LOGIN] Erro ao autenticar:", error, error?.details ?? "");
 
-    if (
-      error?.message === "ADMIN_NOT_FOUND" ||
-      error?.message === "ADMIN_INACTIVE"
-    ) {
+    if (error?.message === "ADMIN_NOT_FOUND") {
       await signOut(auth).catch(() => {});
-
       feedback.textContent =
-        "Sua conta não possui permissão ativa para acessar a Área dos Pais.";
+        "O usuário foi autenticado, mas não existe um documento admins/UID correspondente neste projeto Firebase.";
+      feedback.classList.add("is-error");
+    } else if (error?.message === "ADMIN_INACTIVE") {
+      await signOut(auth).catch(() => {});
+      feedback.textContent =
+        "O documento administrativo foi encontrado, mas o campo active precisa ser booleano true.";
+      feedback.classList.add("is-error");
+    } else if (error?.message === "ADMIN_ROLE_INVALID") {
+      await signOut(auth).catch(() => {});
+      feedback.textContent =
+        "O documento administrativo foi encontrado, mas role precisa ser owner, admin ou editor.";
       feedback.classList.add("is-error");
     } else {
       feedback.textContent = translateAuthError(error);
@@ -199,28 +231,24 @@ async function handleLogin(event) {
 }
 
 function togglePasswordVisibility() {
-  const isVisible = passwordInput.type === "text";
+  const visible = passwordInput.type === "text";
 
-  passwordInput.type = isVisible ? "password" : "text";
-  passwordToggle.setAttribute("aria-pressed", String(!isVisible));
+  passwordInput.type = visible ? "password" : "text";
+  passwordToggle.setAttribute("aria-pressed", String(!visible));
   passwordToggle.setAttribute(
     "aria-label",
-    isVisible ? "Mostrar senha" : "Ocultar senha"
+    visible ? "Mostrar senha" : "Ocultar senha"
   );
 
-  passwordToggle.querySelector(".eye-open").hidden = !isVisible;
-  passwordToggle.querySelector(".eye-closed").hidden = isVisible;
+  passwordToggle.querySelector(".eye-open").hidden = !visible;
+  passwordToggle.querySelector(".eye-closed").hidden = visible;
 }
 
 function openResetDialog() {
   clearResetErrors();
-
-  const currentEmail = normalizeText(emailInput.value);
-  resetEmailInput.value = currentEmail;
-
+  resetEmailInput.value = normalizeText(emailInput.value);
   resetDialog.showModal();
   document.body.classList.add("modal-open");
-
   window.setTimeout(() => resetEmailInput.focus(), 50);
 }
 
@@ -244,21 +272,13 @@ async function handleResetPassword(event) {
 
   try {
     await sendPasswordResetEmail(auth, email);
-
     resetFeedback.textContent =
       "Enviamos o link de recuperação. Verifique também a pasta de spam.";
     resetFeedback.classList.add("is-success");
   } catch (error) {
     console.error("[LOGIN] Erro ao enviar recuperação:", error);
-
-    if (error?.code === "auth/user-not-found") {
-      resetFeedback.textContent =
-        "Caso o e-mail esteja cadastrado, você receberá o link de recuperação.";
-      resetFeedback.classList.add("is-success");
-    } else {
-      resetFeedback.textContent = translateAuthError(error);
-      resetFeedback.classList.add("is-error");
-    }
+    resetFeedback.textContent = translateAuthError(error);
+    resetFeedback.classList.add("is-error");
   } finally {
     setSubmitting(resetForm, false);
   }
@@ -266,9 +286,8 @@ async function handleResetPassword(event) {
 
 function showQueryMessage() {
   const params = new URLSearchParams(window.location.search);
-  const error = params.get("erro");
 
-  if (error === "sem-permissao") {
+  if (params.get("erro") === "sem-permissao") {
     feedback.textContent =
       "Sua conta não possui permissão ativa para acessar a Área dos Pais.";
     feedback.classList.add("is-error");
@@ -288,7 +307,7 @@ onAuthStateChanged(auth, async (user) => {
     await validateAdminUser(user);
     window.location.replace(getRedirectTarget());
   } catch (error) {
-    console.warn("[LOGIN] Sessão sem acesso administrativo:", error);
+    console.error("[LOGIN] Sessão sem acesso administrativo:", error, error?.details ?? "");
     await signOut(auth).catch(() => {});
     showQueryMessage();
   }
