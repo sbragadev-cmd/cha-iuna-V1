@@ -1,3 +1,5 @@
+import { db } from "./firebase-config.js";
+
 import {
   doc,
   getDoc,
@@ -5,358 +7,404 @@ import {
   setDoc
 } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 
-import { db } from "./firebase-config.js";
-
-console.log("[CONFIRMAÇÃO] Script carregado.");
-console.log("[CONFIRMAÇÃO] Projeto ativo: cha-da-iuna");
-console.log("[CONFIRMAÇÃO] Firestore disponível:", Boolean(db));
+const EVENTS = {
+  bage: {
+    id: "bage",
+    label: "Bagé",
+    date: "05/09/2026",
+    time: "15h",
+    location: "Sítio Mãe Velha",
+    city: "Bagé/RS"
+  },
+  "porto-alegre": {
+    id: "porto-alegre",
+    label: "Porto Alegre",
+    date: "03/10/2026",
+    time: "15h",
+    location: "Rua Martins de Lima, 25 — Partenon",
+    city: "Porto Alegre/RS"
+  }
+};
 
 const form = document.querySelector("#rsvpForm");
-const feedback = document.querySelector("#feedback");
-const submitButton = document.querySelector("#submitButton");
+const consultForm = document.querySelector("#consultForm");
+const guestDetails = document.querySelector("#guestDetails");
+const phoneInput = document.querySelector("#phone");
+const protocolInput = document.querySelector("#protocol");
+const successSection = document.querySelector("#successSection");
+const generatedProtocol = document.querySelector("#generatedProtocol");
+const successTitle = document.querySelector("#successTitle");
+const successMessage = document.querySelector("#successMessage");
+const formFeedback = document.querySelector("#formFeedback");
+const consultFeedback = document.querySelector("#consultFeedback");
+const consultResult = document.querySelector("#consultResult");
+const copyProtocolButton = document.querySelector("#copyProtocol");
+const copyFeedback = document.querySelector("#copyFeedback");
 
-const lookupForm = document.querySelector("#lookupForm");
-const lookupCode = document.querySelector("#lookupCode");
-const lookupFeedback = document.querySelector("#lookupFeedback");
-
-if (!form) {
-  throw new Error("O formulário #rsvpForm não foi encontrado.");
-}
-
-function showFeedback(element, message = "", type = "") {
-  if (!element) return;
-
-  element.textContent = message;
-  element.className = "form-feedback";
-
-  if (type) {
-    element.classList.add(`is-${type}`);
-  }
+function normalizeText(value = "") {
+  return String(value).trim().replace(/\s+/g, " ");
 }
 
 function onlyDigits(value = "") {
   return String(value).replace(/\D/g, "");
 }
 
-function getElement(selector) {
-  return document.querySelector(selector);
+function escapeHtml(value = "") {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 }
 
-function getValue(selector, fallback = "") {
-  const element = getElement(selector);
-  return element
-    ? String(element.value ?? "").trim()
-    : fallback;
-}
+function formatPhone(value) {
+  const digits = onlyDigits(value).slice(0, 11);
 
-function getNumber(selector, fallback = 0) {
-  const value = Number(getValue(selector, fallback));
-
-  if (!Number.isFinite(value)) {
-    return fallback;
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 6) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+  if (digits.length <= 10) {
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
   }
 
-  return Math.max(0, Math.trunc(value));
-}
-
-function getCheckedValue(name) {
-  return document.querySelector(
-    `input[name="${name}"]:checked`
-  )?.value || "";
+  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
 }
 
 function createProtocol() {
-  const randomPart = crypto.randomUUID()
-    .replaceAll("-", "")
-    .slice(0, 8)
-    .toUpperCase();
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const randomValues = new Uint32Array(8);
+  crypto.getRandomValues(randomValues);
 
-  return `IUNA-${randomPart}`;
+  const suffix = [...randomValues]
+    .map((value) => alphabet[value % alphabet.length])
+    .join("");
+
+  return `IUNA-${suffix}`;
 }
 
 function normalizeProtocol(value = "") {
-  return String(value)
-    .trim()
+  const cleaned = String(value)
     .toUpperCase()
-    .replace(/\s+/g, "");
+    .replace(/[^A-Z0-9-]/g, "")
+    .replace(/^IUNA?/, "IUNA");
+
+  if (cleaned.startsWith("IUNA-")) {
+    return cleaned.slice(0, 13);
+  }
+
+  if (cleaned.startsWith("IUNA")) {
+    return `IUNA-${cleaned.slice(4)}`.slice(0, 13);
+  }
+
+  return cleaned.slice(0, 13);
 }
 
-function validate(data) {
-  if (data.name.length < 2) {
-    throw new Error("Informe seu nome completo.");
-  }
-
-  if (data.phoneDigits.length < 10) {
-    throw new Error("Informe um WhatsApp válido.");
-  }
-
-  if (!data.event) {
-    throw new Error("Escolha uma opção de presença.");
-  }
-
-  if (data.event !== "nao-vou") {
-    if (data.people < 1 || data.people > 15) {
-      throw new Error(
-        "Informe o total de pessoas entre 1 e 15."
-      );
-    }
-
-    if (data.children > data.people) {
-      throw new Error(
-        "O número de crianças não pode superar o total de pessoas."
-      );
-    }
-  }
-
-  if (!data.consent) {
-    throw new Error(
-      "Autorize o uso dos dados para a organização."
-    );
-  }
+function getCheckedValue(name) {
+  return form?.querySelector(`input[name="${name}"]:checked`)?.value ?? "";
 }
 
-function buildPayload(protocol) {
-  const event = getCheckedValue("event");
-  const declined = event === "nao-vou";
-  const name = getValue("#name");
-  const phone = getValue("#phone");
+function setError(fieldId, message = "") {
+  const errorElement = document.querySelector(`#${fieldId}Error`);
+  const input = document.querySelector(`#${fieldId}`);
 
-  return {
-    protocol,
-    editToken: crypto.randomUUID(),
-    name,
-    nameSearch: name.toLowerCase(),
-    phone,
-    phoneDigits: onlyDigits(phone),
-    email: getValue("#email").toLowerCase(),
-    event,
-    status: declined ? "declined" : "confirmed",
-    people: declined ? 0 : getNumber("#people", 1),
-    children: declined ? 0 : getNumber("#children", 0),
-    companions: declined ? "" : getValue("#companions"),
-    relationship: declined ? "" : getValue("#relationship"),
-    city: declined ? "" : getValue("#city"),
-    dietary: declined ? "" : getValue("#dietary"),
-    message: getValue("#message"),
-    consent: Boolean(getElement("#consent")?.checked),
-    source: "site",
-    createdAt: serverTimestamp(),
-    updatedAt: serverTimestamp()
-  };
+  if (errorElement) errorElement.textContent = message;
+  if (input) input.setAttribute("aria-invalid", message ? "true" : "false");
 }
 
-function showSuccess(data) {
-  const confirmationArea = getElement("#confirmationArea");
-  const successSection = getElement("#success");
-  const successTitle = getElement("#successTitle");
-  const successText = getElement("#successText");
-  const protocolElement = getElement("#protocol");
-
-  if (confirmationArea) {
-    confirmationArea.hidden = true;
-  }
-
-  if (successSection) {
-    successSection.hidden = false;
-  }
-
-  if (successTitle) {
-    successTitle.textContent =
-      data.status === "declined"
-        ? "Recebemos sua resposta com carinho."
-        : "Presença confirmada com carinho!";
-  }
-
-  if (successText) {
-    successText.textContent =
-      data.status === "declined"
-        ? "Sentiremos sua falta, mas agradecemos por avisar."
-        : "Obrigado por fazer parte deste momento tão especial. Guarde o protocolo abaixo para consultar sua confirmação.";
-  }
-
-  if (protocolElement) {
-    protocolElement.textContent = data.protocol;
-  }
-
-  successSection?.scrollIntoView({
-    behavior: "smooth",
-    block: "start"
+function clearErrors() {
+  ["event", "guestName", "phone", "attendance", "consent"].forEach((field) => {
+    setError(field, "");
   });
+
+  formFeedback.textContent = "";
+  formFeedback.className = "form-feedback";
 }
 
-form.addEventListener("submit", async event => {
+function validateForm() {
+  clearErrors();
+
+  const eventId = getCheckedValue("eventId");
+  const attendanceStatus = getCheckedValue("attendanceStatus");
+  const guestName = normalizeText(form.guestName.value);
+  const phoneDigits = onlyDigits(form.phone.value);
+  const consent = form.consent.checked;
+
+  let valid = true;
+
+  if (!EVENTS[eventId]) {
+    setError("event", "Escolha o evento que deseja confirmar.");
+    valid = false;
+  }
+
+  if (guestName.length < 3) {
+    setError("guestName", "Informe seu nome completo.");
+    valid = false;
+  }
+
+  if (phoneDigits.length < 10 || phoneDigits.length > 11) {
+    setError("phone", "Informe um telefone válido com DDD.");
+    valid = false;
+  }
+
+  if (!["confirmed", "declined"].includes(attendanceStatus)) {
+    setError("attendance", "Informe se poderá comparecer.");
+    valid = false;
+  }
+
+  if (!consent) {
+    setError("consent", "É necessário autorizar o uso dos dados.");
+    valid = false;
+  }
+
+  if (attendanceStatus === "confirmed") {
+    const adults = Number(form.adults.value);
+    const children = Number(form.children.value);
+
+    if (!Number.isInteger(adults) || adults < 1 || adults > 10) {
+      formFeedback.textContent = "Informe uma quantidade válida de adultos.";
+      formFeedback.classList.add("is-error");
+      valid = false;
+    }
+
+    if (!Number.isInteger(children) || children < 0 || children > 10) {
+      formFeedback.textContent = "Informe uma quantidade válida de crianças.";
+      formFeedback.classList.add("is-error");
+      valid = false;
+    }
+  }
+
+  return valid;
+}
+
+function toggleGuestDetails() {
+  const status = getCheckedValue("attendanceStatus");
+  const declined = status === "declined";
+
+  guestDetails.classList.toggle("is-hidden", declined);
+  form.adults.disabled = declined;
+  form.children.disabled = declined;
+  form.companions.disabled = declined;
+  form.notes.disabled = declined;
+}
+
+function setSubmitting(submitting) {
+  const button = form.querySelector('button[type="submit"]');
+  const text = button.querySelector(".button-text");
+  const loading = button.querySelector(".button-loading");
+
+  button.disabled = submitting;
+  text.hidden = submitting;
+  loading.hidden = !submitting;
+}
+
+async function getUniqueProtocol() {
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const protocol = createProtocol();
+    const snapshot = await getDoc(doc(db, "rsvps", protocol));
+
+    if (!snapshot.exists()) return protocol;
+  }
+
+  throw new Error("Não foi possível gerar um protocolo único.");
+}
+
+async function saveRsvp(event) {
   event.preventDefault();
 
-  showFeedback(feedback, "");
+  if (!validateForm()) {
+    formFeedback.textContent = "Revise os campos destacados antes de continuar.";
+    formFeedback.classList.add("is-error");
+    return;
+  }
+
+  setSubmitting(true);
 
   try {
-    const protocol = createProtocol();
-    const data = buildPayload(protocol);
+    const eventId = getCheckedValue("eventId");
+    const attendanceStatus = getCheckedValue("attendanceStatus");
+    const protocol = await getUniqueProtocol();
+    const confirmed = attendanceStatus === "confirmed";
 
-    validate(data);
+    const data = {
+      protocol,
+      eventId,
+      eventLabel: EVENTS[eventId].label,
+      eventDate: EVENTS[eventId].date,
+      eventTime: EVENTS[eventId].time,
+      eventLocation: EVENTS[eventId].location,
+      guestName: normalizeText(form.guestName.value),
+      guestNameNormalized: normalizeText(form.guestName.value).toLowerCase(),
+      phone: formatPhone(form.phone.value),
+      phoneDigits: onlyDigits(form.phone.value),
+      relationship: form.relationship.value || "",
+      attendanceStatus,
+      adults: confirmed ? Number(form.adults.value) : 0,
+      children: confirmed ? Number(form.children.value) : 0,
+      companions: confirmed ? normalizeText(form.companions.value) : "",
+      notes: confirmed ? normalizeText(form.notes.value) : "",
+      totalGuests: confirmed
+        ? Number(form.adults.value) + Number(form.children.value)
+        : 0,
+      consent: true,
+      source: "public-site",
+      active: true,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    };
 
-    submitButton.disabled = true;
-    submitButton.textContent = "Confirmando presença...";
+    await setDoc(doc(db, "rsvps", protocol), data);
 
-    console.log(
-      "[CONFIRMAÇÃO] Gravando:",
-      `cha-da-iuna / rsvps / ${protocol}`
-    );
+    generatedProtocol.textContent = protocol;
+    successTitle.textContent = confirmed
+      ? "Presença confirmada com carinho!"
+      : "Recebemos sua resposta.";
 
-    await setDoc(
-      doc(db, "rsvps", protocol),
-      data
-    );
+    successMessage.textContent = confirmed
+      ? `Esperamos você em ${EVENTS[eventId].label}. Guarde seu protocolo para consultar a confirmação.`
+      : "Sentiremos sua falta, mas agradecemos por nos avisar e por todo o carinho com a Iúna.";
 
-    console.log(
-      "[CONFIRMAÇÃO] Presença gravada:",
-      protocol
-    );
+    successSection.hidden = false;
+    form.reset();
+    toggleGuestDetails();
+    applyEventFromUrl();
 
-    showFeedback(
-      feedback,
-      `Presença registrada. Seu protocolo é ${protocol}.`,
-      "success"
-    );
-
-    showSuccess(data);
+    successSection.scrollIntoView({
+      behavior: "smooth",
+      block: "center"
+    });
   } catch (error) {
-    console.error(
-      "[CONFIRMAÇÃO] Erro ao gravar:",
-      error
-    );
+    console.error("[RSVP] Erro ao salvar confirmação:", error);
 
-    let message =
-      error?.message ||
-      "Não foi possível registrar sua confirmação.";
-
-    if (error?.code === "permission-denied") {
-      message =
-        "O Firebase bloqueou a gravação. Publique as regras atualizadas no projeto cha-da-iuna.";
-    }
-
-    if (error?.code === "failed-precondition") {
-      message =
-        "O Firestore ainda não foi criado no projeto cha-da-iuna.";
-    }
-
-    if (error?.code === "unavailable") {
-      message =
-        "Não foi possível acessar o Firebase. Verifique sua conexão.";
-    }
-
-    showFeedback(feedback, message, "error");
+    formFeedback.textContent =
+      "Não foi possível registrar sua confirmação agora. Tente novamente em instantes.";
+    formFeedback.classList.add("is-error");
   } finally {
-    submitButton.disabled = false;
-    submitButton.textContent = "Confirmar minha resposta";
+    setSubmitting(false);
   }
-});
+}
 
-if (lookupForm) {
-  lookupForm.addEventListener("submit", async event => {
-    event.preventDefault();
+function renderConsultResult(data) {
+  const event = EVENTS[data.eventId];
+  const confirmed = data.attendanceStatus === "confirmed";
+  const nameFirstPart = normalizeText(data.guestName).split(" ")[0] || "Convidado";
 
-    const protocol = normalizeProtocol(lookupCode?.value);
+  consultResult.innerHTML = `
+    <h3>${confirmed ? "Presença confirmada" : "Ausência informada"}</h3>
+    <dl>
+      <div>
+        <dt>Convidado</dt>
+        <dd>${escapeHtml(nameFirstPart)}</dd>
+      </div>
+      <div>
+        <dt>Evento</dt>
+        <dd>${escapeHtml(event?.label ?? data.eventLabel ?? "Não informado")}</dd>
+      </div>
+      <div>
+        <dt>Data e horário</dt>
+        <dd>${escapeHtml(event?.date ?? data.eventDate ?? "")} • ${escapeHtml(event?.time ?? data.eventTime ?? "")}</dd>
+      </div>
+      <div>
+        <dt>Situação</dt>
+        <dd>${confirmed ? "Confirmado" : "Não comparecerá"}</dd>
+      </div>
+      ${
+        confirmed
+          ? `
+            <div>
+              <dt>Adultos</dt>
+              <dd>${Number(data.adults ?? 0)}</dd>
+            </div>
+            <div>
+              <dt>Crianças</dt>
+              <dd>${Number(data.children ?? 0)}</dd>
+            </div>
+          `
+          : ""
+      }
+    </dl>
+  `;
 
-    if (!protocol || !protocol.startsWith("IUNA-")) {
-      showFeedback(
-        lookupFeedback,
-        "Digite um protocolo válido, como IUNA-AB12CD34.",
-        "error"
-      );
+  consultResult.hidden = false;
+}
+
+async function consultRsvp(event) {
+  event.preventDefault();
+
+  consultFeedback.textContent = "";
+  consultFeedback.className = "form-feedback";
+  consultResult.hidden = true;
+
+  const protocol = normalizeProtocol(protocolInput.value);
+  protocolInput.value = protocol;
+
+  if (!/^IUNA-[A-Z0-9]{8}$/.test(protocol)) {
+    consultFeedback.textContent = "Informe um protocolo válido.";
+    consultFeedback.classList.add("is-error");
+    return;
+  }
+
+  try {
+    const snapshot = await getDoc(doc(db, "rsvps", protocol));
+
+    if (!snapshot.exists()) {
+      consultFeedback.textContent = "Protocolo não encontrado.";
+      consultFeedback.classList.add("is-error");
       return;
     }
 
-    showFeedback(
-      lookupFeedback,
-      "Consultando confirmação..."
-    );
+    renderConsultResult(snapshot.data());
+    consultFeedback.textContent = "Confirmação encontrada.";
+    consultFeedback.classList.add("is-success");
+  } catch (error) {
+    console.error("[RSVP] Erro ao consultar protocolo:", error);
 
-    try {
-      const snapshot = await getDoc(
-        doc(db, "rsvps", protocol)
-      );
-
-      if (!snapshot.exists()) {
-        showFeedback(
-          lookupFeedback,
-          "Nenhuma confirmação foi encontrada com esse protocolo.",
-          "error"
-        );
-        return;
-      }
-
-      const data = snapshot.data();
-
-      const eventLabels = {
-        bage: "Bagé",
-        "porto-alegre": "Porto Alegre",
-        ambos: "Bagé e Porto Alegre",
-        "nao-vou": "Não poderá participar"
-      };
-
-      const statusText =
-        data.status === "declined"
-          ? "Resposta registrada: não poderá participar."
-          : `Presença confirmada para ${eventLabels[data.event] || "o evento"}.`;
-
-      const peopleText =
-        data.status === "declined"
-          ? ""
-          : ` Total de pessoas: ${data.people || 1}.`;
-
-      showFeedback(
-        lookupFeedback,
-        `${data.name}: ${statusText}${peopleText}`,
-        "success"
-      );
-    } catch (error) {
-      console.error(
-        "[CONSULTA] Erro:",
-        error
-      );
-
-      const message =
-        error?.code === "permission-denied"
-          ? "A consulta foi bloqueada pelas regras do Firebase. Publique as regras atualizadas."
-          : "Não foi possível consultar o protocolo agora.";
-
-      showFeedback(
-        lookupFeedback,
-        message,
-        "error"
-      );
-    }
-  });
+    consultFeedback.textContent =
+      "Não foi possível consultar agora. Tente novamente em instantes.";
+    consultFeedback.classList.add("is-error");
+  }
 }
 
-const phoneInput = getElement("#phone");
+function applyEventFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  const eventId = params.get("evento");
 
-if (phoneInput) {
-  phoneInput.addEventListener("input", event => {
-    event.target.value = event.target.value
-      .replace(/[^\d()\s-]/g, "")
-      .slice(0, 16);
-  });
+  if (!EVENTS[eventId]) return;
+
+  const input = form.querySelector(
+    `input[name="eventId"][value="${eventId}"]`
+  );
+
+  if (input) input.checked = true;
 }
 
-const copyButton = getElement("#copyProtocol");
+async function copyProtocol() {
+  const protocol = generatedProtocol.textContent.trim();
+  if (!protocol) return;
 
-if (copyButton) {
-  copyButton.addEventListener("click", async () => {
-    const value = getElement("#protocol")
-      ?.textContent
-      .trim();
-
-    if (!value) return;
-
-    try {
-      await navigator.clipboard.writeText(value);
-      copyButton.textContent = "Copiado!";
-    } catch {
-      window.prompt("Copie seu protocolo:", value);
-    }
-  });
+  try {
+    await navigator.clipboard.writeText(protocol);
+    copyFeedback.textContent = "Protocolo copiado.";
+  } catch {
+    copyFeedback.textContent =
+      "Selecione e copie o protocolo exibido acima.";
+  }
 }
 
-console.log("[CONFIRMAÇÃO] Inicialização concluída.");
+phoneInput?.addEventListener("input", () => {
+  phoneInput.value = formatPhone(phoneInput.value);
+});
+
+protocolInput?.addEventListener("input", () => {
+  protocolInput.value = normalizeProtocol(protocolInput.value);
+});
+
+form
+  ?.querySelectorAll('input[name="attendanceStatus"]')
+  .forEach((input) => input.addEventListener("change", toggleGuestDetails));
+
+form?.addEventListener("submit", saveRsvp);
+consultForm?.addEventListener("submit", consultRsvp);
+copyProtocolButton?.addEventListener("click", copyProtocol);
+
+applyEventFromUrl();
+toggleGuestDetails();

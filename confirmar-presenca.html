@@ -3,300 +3,379 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#76549b">
-  <meta name="description" content="Confirme sua presença no Chá da Iúna em Bagé ou Porto Alegre.">
+
   <title>Confirmar presença | Chá da Iúna</title>
+
+  <meta
+    name="description"
+    content="Confirme sua presença no Chá da Iúna em Bagé ou Porto Alegre."
+  >
+  <meta name="theme-color" content="#7b5aa6">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="./assets/css/style.css">
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap"
+    rel="stylesheet"
+  >
+
   <link rel="stylesheet" href="./assets/css/rsvp.css">
 </head>
 
-<body class="rsvp-page">
-  <header class="rsvp-header">
-    <div class="container rsvp-header-inner">
+<body>
+  <a class="skip-link" href="#conteudo">Ir para o conteúdo</a>
+
+  <header class="site-header">
+    <div class="container header-inner">
       <a class="brand" href="./index.html" aria-label="Voltar para a página inicial">
-        <span class="brand-symbol">I</span>
+        <span class="brand-mark" aria-hidden="true">I</span>
         <span>
           <strong>Chá da Iúna</strong>
           <small>confirmação de presença</small>
         </span>
       </a>
 
-      <a class="button button-secondary" href="./index.html">Voltar ao site</a>
+      <nav class="header-nav" aria-label="Navegação da confirmação">
+        <a href="./index.html">Início</a>
+        <a href="#confirmar">Confirmar</a>
+        <a href="#consultar">Consultar protocolo</a>
+      </nav>
     </div>
   </header>
 
-  <main>
-    <section class="rsvp-hero">
-      <div class="container rsvp-hero-grid">
-        <div>
-          <p class="eyebrow">Esperamos por você</p>
-          <h1>
-            Confirme seu abraço
-            <em>para a chegada da Iúna.</em>
-          </h1>
-
+  <main id="conteudo">
+    <section class="hero">
+      <div class="container hero-grid">
+        <div class="hero-copy">
+          <p class="eyebrow">Sua presença é muito importante</p>
+          <h1>Vamos celebrar juntos a chegada da Iúna.</h1>
           <p>
-            Sua resposta nos ajuda a organizar cada detalhe com calma,
-            cuidado e carinho.
+            Escolha o encontro, informe quem estará com você e guarde o
+            protocolo gerado ao final.
           </p>
+
+          <div class="event-mini-grid">
+            <article>
+              <span>Bagé</span>
+              <strong>05/09/2026 • 15h</strong>
+              <small>Sítio Mãe Velha</small>
+            </article>
+
+            <article>
+              <span>Porto Alegre</span>
+              <strong>03/10/2026 • 15h</strong>
+              <small>Rua Martins de Lima, 25 — Partenon</small>
+            </article>
+          </div>
         </div>
 
-        <div class="event-info">
-          <article>
-            <strong>Bagé</strong>
-            <span>05/09/2026, às 15h</span>
-            <small>Sítio Mãe Velha</small>
-          </article>
-
-          <article>
-            <strong>Porto Alegre</strong>
-            <span>Data e horário a definir</span>
-            <small>Rua Martins de Lima, 20</small>
-          </article>
+        <div class="hero-art" aria-hidden="true">
+          <span class="heart">♥</span>
+          <strong>Iúna</strong>
+          <small>esperamos você com carinho</small>
         </div>
       </div>
     </section>
 
-    <section class="section" id="confirmationArea">
-      <div class="container rsvp-layout">
-        <form id="rsvpForm" class="rsvp-form" novalidate>
-          <section class="form-card">
-            <p class="eyebrow">1. Sobre você</p>
-            <h2>Quem está confirmando?</h2>
+    <section class="section" id="confirmar">
+      <div class="container content-layout">
+        <article class="form-card">
+          <div class="section-heading">
+            <p class="eyebrow">Confirmação</p>
+            <h2>Conte para nós se você estará presente.</h2>
+            <p>
+              Os campos marcados com asterisco são obrigatórios.
+            </p>
+          </div>
 
-            <div class="form-grid">
-              <label>
-                <span>Nome completo</span>
-                <input
-                  id="name"
-                  type="text"
-                  maxlength="100"
-                  autocomplete="name"
-                  required
-                  placeholder="Seu nome"
-                >
-              </label>
+          <form id="rsvpForm" novalidate>
+            <fieldset>
+              <legend>1. Escolha o evento</legend>
 
-              <label>
-                <span>WhatsApp</span>
-                <input
-                  id="phone"
-                  type="tel"
-                  maxlength="16"
-                  inputmode="tel"
-                  autocomplete="tel"
-                  required
-                  placeholder="(00) 00000-0000"
-                >
-              </label>
-            </div>
+              <div class="event-options">
+                <label class="event-option">
+                  <input
+                    type="radio"
+                    name="eventId"
+                    value="bage"
+                    required
+                  >
+                  <span>
+                    <strong>Bagé</strong>
+                    <small>05/09/2026 • 15h</small>
+                    <small>Sítio Mãe Velha</small>
+                  </span>
+                </label>
 
-            <label>
-              <span>E-mail opcional</span>
-              <input
-                id="email"
-                type="email"
-                maxlength="120"
-                autocomplete="email"
-                placeholder="voce@exemplo.com"
-              >
-            </label>
-          </section>
+                <label class="event-option">
+                  <input
+                    type="radio"
+                    name="eventId"
+                    value="porto-alegre"
+                    required
+                  >
+                  <span>
+                    <strong>Porto Alegre</strong>
+                    <small>03/10/2026 • 15h</small>
+                    <small>Rua Martins de Lima, 25 — Partenon</small>
+                  </span>
+                </label>
+              </div>
 
-          <section class="form-card">
-            <p class="eyebrow">2. Nosso encontro</p>
-            <h2>Em qual celebração você estará?</h2>
+              <p class="field-error" id="eventError"></p>
+            </fieldset>
 
-            <div class="event-options">
-              <label>
-                <input type="radio" name="event" value="bage">
-                <span>
-                  <strong>Bagé</strong>
-                  <small>05/09/2026, às 15h</small>
-                  <em>Sítio Mãe Velha</em>
-                </span>
-              </label>
+            <fieldset>
+              <legend>2. Seus dados</legend>
 
-              <label>
-                <input type="radio" name="event" value="porto-alegre">
-                <span>
-                  <strong>Porto Alegre</strong>
-                  <small>Data a definir</small>
-                  <em>Rua Martins de Lima, 20</em>
-                </span>
-              </label>
+              <div class="form-grid">
+                <div class="form-field form-field-full">
+                  <label for="guestName">Nome completo *</label>
+                  <input
+                    id="guestName"
+                    name="guestName"
+                    type="text"
+                    maxlength="100"
+                    autocomplete="name"
+                    required
+                  >
+                  <p class="field-error" id="guestNameError"></p>
+                </div>
 
-              <label>
-                <input type="radio" name="event" value="ambos">
-                <span>
-                  <strong>As duas celebrações</strong>
-                  <small>Bagé + Porto Alegre</small>
-                  <em>Quero estar nos dois encontros</em>
-                </span>
-              </label>
+                <div class="form-field">
+                  <label for="phone">Telefone com WhatsApp *</label>
+                  <input
+                    id="phone"
+                    name="phone"
+                    type="tel"
+                    inputmode="numeric"
+                    maxlength="16"
+                    autocomplete="tel"
+                    placeholder="(51) 99999-9999"
+                    required
+                  >
+                  <p class="field-error" id="phoneError"></p>
+                </div>
 
-              <label class="declined-option">
-                <input type="radio" name="event" value="nao-vou">
-                <span>
-                  <strong>Não poderei participar</strong>
-                  <small>Envio meu carinho</small>
-                  <em>Sua resposta também nos ajuda</em>
-                </span>
-              </label>
-            </div>
-          </section>
+                <div class="form-field">
+                  <label for="relationship">Como você conhece a família?</label>
+                  <select id="relationship" name="relationship">
+                    <option value="">Selecione</option>
+                    <option value="familia">Família</option>
+                    <option value="amigo">Amigo ou amiga</option>
+                    <option value="trabalho">Trabalho</option>
+                    <option value="capoeira">Capoeira</option>
+                    <option value="outro">Outro</option>
+                  </select>
+                </div>
+              </div>
+            </fieldset>
 
-          <section class="form-card" id="attendanceDetails">
-            <p class="eyebrow">3. Seu grupo</p>
-            <h2>Quem vem com você?</h2>
+            <fieldset>
+              <legend>3. Você poderá comparecer?</legend>
 
-            <div class="form-grid">
-              <label>
-                <span>Total de pessoas, incluindo você</span>
-                <input id="people" type="number" min="1" max="15" value="1">
-              </label>
+              <div class="attendance-options">
+                <label>
+                  <input
+                    type="radio"
+                    name="attendanceStatus"
+                    value="confirmed"
+                    required
+                  >
+                  <span>Sim, estarei presente</span>
+                </label>
 
-              <label>
-                <span>Quantas crianças?</span>
-                <input id="children" type="number" min="0" max="10" value="0">
-              </label>
-            </div>
+                <label>
+                  <input
+                    type="radio"
+                    name="attendanceStatus"
+                    value="declined"
+                    required
+                  >
+                  <span>Infelizmente não poderei ir</span>
+                </label>
+              </div>
 
-            <label>
-              <span>Nomes dos acompanhantes</span>
-              <textarea
-                id="companions"
-                rows="3"
-                maxlength="300"
-                placeholder="Ex.: Maria, João e Pedro"
-              ></textarea>
-            </label>
+              <p class="field-error" id="attendanceError"></p>
 
-            <div class="form-grid">
-              <label>
-                <span>Como você faz parte da nossa história?</span>
-                <select id="relationship">
-                  <option value="">Selecione</option>
-                  <option value="familia">Família</option>
-                  <option value="amigos">Amigos</option>
-                  <option value="capoeira">Capoeira</option>
-                  <option value="trabalho">Trabalho</option>
-                  <option value="outro">Outro</option>
-                </select>
-              </label>
+              <div class="guest-details" id="guestDetails">
+                <div class="form-grid">
+                  <div class="form-field">
+                    <label for="adults">Quantidade de adultos *</label>
+                    <input
+                      id="adults"
+                      name="adults"
+                      type="number"
+                      min="1"
+                      max="10"
+                      value="1"
+                    >
+                  </div>
 
-              <label>
-                <span>Cidade</span>
-                <input id="city" maxlength="80" placeholder="Sua cidade">
-              </label>
-            </div>
-          </section>
+                  <div class="form-field">
+                    <label for="children">Quantidade de crianças</label>
+                    <input
+                      id="children"
+                      name="children"
+                      type="number"
+                      min="0"
+                      max="10"
+                      value="0"
+                    >
+                  </div>
 
-          <section class="form-card">
-            <p class="eyebrow">4. Cuidado com todos</p>
-            <h2>Alguma informação importante?</h2>
+                  <div class="form-field form-field-full">
+                    <label for="companions">
+                      Nome dos acompanhantes
+                    </label>
+                    <textarea
+                      id="companions"
+                      name="companions"
+                      rows="3"
+                      maxlength="500"
+                      placeholder="Escreva um nome por linha, se houver."
+                    ></textarea>
+                  </div>
 
-            <label>
-              <span>Restrições alimentares ou acessibilidade</span>
-              <textarea
-                id="dietary"
-                rows="3"
-                maxlength="400"
-                placeholder="Alergias, intolerâncias ou necessidades especiais"
-              ></textarea>
-            </label>
+                  <div class="form-field form-field-full">
+                    <label for="notes">Observação</label>
+                    <textarea
+                      id="notes"
+                      name="notes"
+                      rows="4"
+                      maxlength="700"
+                      placeholder="Alergia alimentar, necessidade de acessibilidade ou outro recado."
+                    ></textarea>
+                  </div>
+                </div>
+              </div>
+            </fieldset>
 
-            <label>
-              <span>Recadinho opcional</span>
-              <textarea
-                id="message"
-                rows="4"
-                maxlength="500"
-                placeholder="Deixe uma mensagem carinhosa para a família"
-              ></textarea>
-            </label>
-
-            <label class="consent">
-              <input id="consent" type="checkbox">
+            <label class="consent-field">
+              <input id="consent" name="consent" type="checkbox" required>
               <span>
-                Autorizo o uso destas informações somente para organizar
-                as celebrações do Chá da Iúna.
+                Autorizo o uso destes dados exclusivamente para a organização
+                do Chá da Iúna. *
               </span>
             </label>
-          </section>
+            <p class="field-error" id="consentError"></p>
 
-          <input id="editToken" type="hidden">
+            <div
+              class="form-feedback"
+              id="formFeedback"
+              role="status"
+              aria-live="polite"
+            ></div>
 
-          <div class="submit-area">
-            <button id="submitButton" class="button button-primary" type="submit">
-              Confirmar minha resposta
-            </button>
-
-            <div id="feedback" class="form-feedback" role="status" aria-live="polite"></div>
-          </div>
-        </form>
-
-        <aside class="lookup-card">
-          <p class="eyebrow">Já confirmou?</p>
-          <h2>Consulte ou atualize</h2>
-
-          <p>
-            Use o protocolo recebido após a sua confirmação.
-          </p>
-
-          <form id="lookupForm">
-            <label>
-              <span>Protocolo</span>
-              <input
-                id="lookupCode"
-                maxlength="20"
-                autocomplete="off"
-                placeholder="IUNA-AB12CD"
-              >
-            </label>
-
-            <button class="button button-secondary" type="submit">
-              Consultar confirmação
+            <button class="button button-primary button-full" type="submit">
+              <span class="button-text">Confirmar presença</span>
+              <span class="button-loading" hidden>Salvando...</span>
             </button>
           </form>
+        </article>
 
-          <div
-            id="lookupFeedback"
-            class="form-feedback"
-            role="status"
-            aria-live="polite"
-          ></div>
+        <aside class="help-card">
+          <span class="help-icon" aria-hidden="true">♡</span>
+          <h2>Depois de confirmar</h2>
+          <p>
+            Você receberá um protocolo como:
+          </p>
+
+          <strong class="protocol-example">IUNA-AB12CD34</strong>
+
+          <p>
+            Guarde esse código para consultar sua confirmação posteriormente.
+          </p>
+
+          <ul>
+            <li>O protocolo não deve ser compartilhado publicamente.</li>
+            <li>Você poderá consultar o evento e a quantidade de convidados.</li>
+            <li>Os pais poderão acompanhar tudo pela área administrativa.</li>
+          </ul>
         </aside>
       </div>
     </section>
 
-    <section id="success" class="success-section" hidden>
+    <section class="section success-section" id="successSection" hidden>
       <div class="container">
-        <div class="success-card">
-          <span class="success-icon">✓</span>
-          <p class="eyebrow">Resposta recebida</p>
-
-          <h2 id="successTitle">Obrigado por confirmar!</h2>
-          <p id="successText"></p>
+        <article class="success-card">
+          <span class="success-icon" aria-hidden="true">♥</span>
+          <p class="eyebrow">Confirmação registrada</p>
+          <h2 id="successTitle">Obrigado pelo carinho!</h2>
+          <p id="successMessage"></p>
 
           <div class="protocol-box">
-            <small>Seu protocolo para consultar ou editar</small>
-            <strong id="protocol"></strong>
-            <button id="copyProtocol" type="button">Copiar protocolo</button>
+            <span>Seu protocolo</span>
+            <strong id="generatedProtocol"></strong>
           </div>
 
-          <a class="button button-primary" href="./index.html">
-            Voltar ao site
-          </a>
+          <div class="success-actions">
+            <button class="button button-primary" id="copyProtocol" type="button">
+              Copiar protocolo
+            </button>
+
+            <a class="button button-secondary" href="./index.html">
+              Voltar para o início
+            </a>
+          </div>
+
+          <p class="copy-feedback" id="copyFeedback" aria-live="polite"></p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section consultation-section" id="consultar">
+      <div class="container consultation-layout">
+        <div>
+          <p class="eyebrow">Consultar confirmação</p>
+          <h2>Já confirmou sua presença?</h2>
+          <p>
+            Digite o protocolo recebido para verificar os dados principais
+            da confirmação.
+          </p>
         </div>
+
+        <article class="consultation-card">
+          <form id="consultForm" novalidate>
+            <label for="protocol">Protocolo</label>
+
+            <div class="protocol-input-row">
+              <input
+                id="protocol"
+                name="protocol"
+                type="text"
+                maxlength="13"
+                autocomplete="off"
+                placeholder="IUNA-AB12CD34"
+                required
+              >
+
+              <button class="button button-primary" type="submit">
+                Consultar
+              </button>
+            </div>
+
+            <p
+              class="form-feedback"
+              id="consultFeedback"
+              role="status"
+              aria-live="polite"
+            ></p>
+          </form>
+
+          <div class="consult-result" id="consultResult" hidden></div>
+        </article>
       </div>
     </section>
   </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <p>Feito com muito amor para a chegada da Iúna.</p>
+      <a href="./login.html">Área dos Pais</a>
+    </div>
+  </footer>
 
   <script type="module" src="./assets/js/rsvp.js"></script>
 </body>
