@@ -2,13 +2,21 @@ import {
   collection,
   deleteDoc,
   doc,
+  getDoc,
   onSnapshot,
   serverTimestamp,
   setDoc,
   updateDoc
 } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 
-import { db } from "./firebase-config.js";
+import {
+  onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
+
+import {
+  auth,
+  db
+} from "./firebase-config.js";
 
 const giftsCollection = collection(db, "gifts");
 
@@ -28,12 +36,15 @@ const elements = {
 const state = {
   gifts: [],
   editingId: null,
-  unsubscribe: null
+  unsubscribe: null,
+  user: null,
+  admin: null,
+  authReady: false
 };
 
-function showToast(message, type = "success") {
+function showToast(message, type = "success", duration = 4000) {
   if (!elements.toast) {
-    console.log(`[PRESENTES] ${message}`);
+    console[type === "error" ? "error" : "log"](`[PRESENTES] ${message}`);
     return;
   }
 
@@ -41,11 +52,11 @@ function showToast(message, type = "success") {
   elements.toast.dataset.type = type;
   elements.toast.classList.add("show");
 
-  window.clearTimeout(showToast.timeout);
+  clearTimeout(showToast.timeout);
 
-  showToast.timeout = window.setTimeout(() => {
+  showToast.timeout = setTimeout(() => {
     elements.toast.classList.remove("show");
-  }, 3000);
+  }, duration);
 }
 
 function escapeHtml(value = "") {
@@ -92,25 +103,90 @@ function getAvailable(gift) {
   return Math.max(0, getTotal(gift) - getReserved(gift));
 }
 
-function formatStatus(gift) {
-  if (gift.active === false) {
-    return {
-      text: "Oculto",
-      className: "pending"
-    };
+function formatFirebaseError(error) {
+  const code = error?.code || "";
+  const message = error?.message || "";
+
+  if (code.includes("permission-denied")) {
+    return "Permissão negada pelo Firestore. Verifique se existe o documento admins/" +
+      (state.user?.uid || "UID_DO_USUARIO") +
+      " com active: true e role: owner, admin ou editor.";
   }
 
-  if (getAvailable(gift) <= 0) {
-    return {
-      text: "Esgotado",
-      className: "reserved"
-    };
+  if (code.includes("unauthenticated")) {
+    return "Sua sessão não está autenticada. Saia do painel e entre novamente.";
   }
 
-  return {
-    text: "Disponível",
-    className: "available"
+  if (code.includes("unavailable")) {
+    return "O Firebase está temporariamente indisponível. Verifique sua internet.";
+  }
+
+  return message || "Não foi possível concluir a operação no Firebase.";
+}
+
+async function loadAdminProfile(user) {
+  if (!user) {
+    state.admin = null;
+    return null;
+  }
+
+  const adminReference = doc(db, "admins", user.uid);
+  const adminSnapshot = await getDoc(adminReference);
+
+  if (!adminSnapshot.exists()) {
+    state.admin = null;
+    return null;
+  }
+
+  state.admin = {
+    id: adminSnapshot.id,
+    ...adminSnapshot.data()
   };
+
+  return state.admin;
+}
+
+function isAuthorizedAdmin() {
+  if (!state.user || !state.admin) {
+    return false;
+  }
+
+  const role = String(state.admin.role || "").toLowerCase();
+
+  return state.admin.active === true &&
+    ["owner", "admin", "editor"].includes(role);
+}
+
+function requireAdmin() {
+  if (!state.authReady) {
+    showToast("Aguarde a autenticação do painel.", "error");
+    return false;
+  }
+
+  if (!state.user) {
+    showToast("Sua sessão expirou. Entre novamente no painel.", "error");
+    return false;
+  }
+
+  if (!state.admin) {
+    showToast(
+      `O usuário está autenticado, mas não existe admins/${state.user.uid} no Firestore.`,
+      "error",
+      8000
+    );
+    return false;
+  }
+
+  if (!isAuthorizedAdmin()) {
+    showToast(
+      "O cadastro do administrador precisa ter active: true e role: owner, admin ou editor.",
+      "error",
+      8000
+    );
+    return false;
+  }
+
+  return true;
 }
 
 function injectAdminInterface() {
@@ -138,13 +214,8 @@ function injectAdminInterface() {
 
     <label>
       <span>Nome do presente</span>
-      <input
-        id="giftName"
-        type="text"
-        maxlength="100"
-        required
-        placeholder="Ex.: Fralda tamanho M"
-      >
+      <input id="giftName" type="text" maxlength="100" required
+        placeholder="Ex.: Fralda tamanho M">
     </label>
 
     <div class="form-grid">
@@ -163,48 +234,27 @@ function injectAdminInterface() {
 
       <label>
         <span>Quantidade total desejada</span>
-        <input
-          id="giftTotalQuantity"
-          type="number"
-          min="1"
-          max="999"
-          step="1"
-          value="1"
-          required
-        >
+        <input id="giftTotalQuantity" type="number"
+          min="1" max="999" step="1" value="1" required>
       </label>
     </div>
 
     <label>
       <span>Descrição opcional</span>
-      <textarea
-        id="giftDescription"
-        rows="3"
-        maxlength="300"
-        placeholder="Ex.: Preferência por fraldas sem perfume."
-      ></textarea>
+      <textarea id="giftDescription" rows="3" maxlength="300"
+        placeholder="Ex.: Preferência por fraldas sem perfume."></textarea>
     </label>
 
     <div class="form-grid">
       <label>
         <span>Endereço da imagem</span>
-        <input
-          id="giftImageUrl"
-          type="url"
-          placeholder="https://..."
-        >
+        <input id="giftImageUrl" type="url" placeholder="https://...">
       </label>
 
       <label>
         <span>Ordem na lista</span>
-        <input
-          id="giftOrder"
-          type="number"
-          min="0"
-          max="9999"
-          step="1"
-          value="0"
-        >
+        <input id="giftOrder" type="number"
+          min="0" max="9999" step="1" value="0">
       </label>
     </div>
 
@@ -216,8 +266,8 @@ function injectAdminInterface() {
     <div class="admin-gift-privacy-note">
       <strong>Privacidade das reservas</strong>
       <p>
-        O sistema controla apenas as quantidades. Nenhum nome de convidado
-        será registrado ou exibido.
+        O sistema controla somente as quantidades.
+        Nenhum nome de convidado será registrado.
       </p>
     </div>
 
@@ -234,20 +284,15 @@ function injectAdminInterface() {
 
   elements.form
     .querySelector(".modal-cancel")
-    ?.addEventListener("click", () => closeGiftModal());
-
-  if (elements.modalTitle) {
-    elements.modalTitle.textContent = "Novo presente";
-  }
+    ?.addEventListener("click", closeGiftModal);
 }
 
 function openGiftModal(gift = null) {
-  if (!elements.modal || !elements.form) {
+  if (!requireAdmin() || !elements.modal || !elements.form) {
     return;
   }
 
   state.editingId = gift?.id || null;
-
   elements.form.reset();
 
   document.querySelector("#giftId").value = gift?.id || "";
@@ -260,9 +305,8 @@ function openGiftModal(gift = null) {
     normalizeInteger(gift?.order, 0);
   document.querySelector("#giftActive").checked =
     gift?.active !== false;
-
-  const totalInput = document.querySelector("#giftTotalQuantity");
-  totalInput.value = gift ? Math.max(1, getTotal(gift)) : 1;
+  document.querySelector("#giftTotalQuantity").value =
+    gift ? Math.max(1, getTotal(gift)) : 1;
 
   if (elements.modalTitle) {
     elements.modalTitle.textContent = gift
@@ -272,23 +316,15 @@ function openGiftModal(gift = null) {
 
   elements.modal.classList.add("open");
   elements.modal.setAttribute("aria-hidden", "false");
-
-  window.setTimeout(() => {
-    document.querySelector("#giftName")?.focus();
-  }, 50);
 }
 
 function closeGiftModal() {
-  if (!elements.modal) {
-    return;
-  }
-
-  elements.modal.classList.remove("open");
-  elements.modal.setAttribute("aria-hidden", "true");
+  elements.modal?.classList.remove("open");
+  elements.modal?.setAttribute("aria-hidden", "true");
   state.editingId = null;
 }
 
-function renderSummary() {
+function render() {
   const totalItems = state.gifts.reduce(
     (sum, gift) => sum + getTotal(gift),
     0
@@ -303,10 +339,6 @@ function renderSummary() {
     (sum, gift) => sum + getReserved(gift),
     0
   );
-
-  const activeGifts = state.gifts.filter(
-    gift => gift.active !== false
-  ).length;
 
   if (elements.summary) {
     elements.summary.innerHTML = `
@@ -329,11 +361,6 @@ function renderSummary() {
         <small>Unidades escolhidas</small>
         <strong>${reservedItems}</strong>
       </article>
-
-      <article class="summary-card">
-        <small>Itens visíveis</small>
-        <strong>${activeGifts}</strong>
-      </article>
     `;
   }
 
@@ -345,9 +372,7 @@ function renderSummary() {
     elements.statReserved.textContent =
       `${reservedItems} unidades escolhidas`;
   }
-}
 
-function renderTable() {
   if (!elements.tableBody) {
     return;
   }
@@ -357,7 +382,7 @@ function renderTable() {
       <tr>
         <td colspan="7">
           <div class="empty-state">
-            Nenhum presente cadastrado.
+            Nenhum presente cadastrado no Firestore.
           </div>
         </td>
       </tr>
@@ -365,107 +390,63 @@ function renderTable() {
     return;
   }
 
-  elements.tableBody.innerHTML = state.gifts
-    .map(gift => {
-      const status = formatStatus(gift);
-      const total = getTotal(gift);
-      const available = getAvailable(gift);
-      const reserved = getReserved(gift);
+  elements.tableBody.innerHTML = state.gifts.map(gift => {
+    const total = getTotal(gift);
+    const available = getAvailable(gift);
+    const reserved = getReserved(gift);
+    const visible = gift.active !== false;
 
-      return `
-        <tr>
-          <td class="person-cell">
-            <strong>${escapeHtml(gift.name || "Sem nome")}</strong>
-            <small>
-              ${escapeHtml(gift.description || "Sem descrição")}
-            </small>
-          </td>
+    return `
+      <tr>
+        <td class="person-cell">
+          <strong>${escapeHtml(gift.name || "Sem nome")}</strong>
+          <small>${escapeHtml(gift.description || "Sem descrição")}</small>
+        </td>
 
-          <td>${escapeHtml(gift.category || "Outro")}</td>
+        <td>${escapeHtml(gift.category || "Outro")}</td>
+        <td><strong>${total}</strong></td>
+        <td><strong>${available}</strong></td>
+        <td><strong>${reserved}</strong></td>
 
-          <td>
-            <strong>${total}</strong>
-          </td>
+        <td>
+          <span class="status-pill ${visible ? "available" : "pending"}">
+            ${visible ? "Visível" : "Oculto"}
+          </span>
+        </td>
 
-          <td>
-            <strong>${available}</strong>
-          </td>
+        <td>
+          <div class="action-buttons">
+            <button class="icon-button" type="button"
+              data-admin-edit-gift="${gift.id}" title="Editar">✎</button>
 
-          <td>
-            <strong>${reserved}</strong>
-          </td>
+            <button class="icon-button" type="button"
+              data-admin-toggle-gift="${gift.id}"
+              title="${visible ? "Ocultar" : "Exibir"}">
+              ${visible ? "◉" : "○"}
+            </button>
 
-          <td>
-            <span class="status-pill ${status.className}">
-              ${status.text}
-            </span>
-          </td>
-
-          <td>
-            <div class="action-buttons">
-              <button
-                class="icon-button"
-                type="button"
-                data-admin-edit-gift="${gift.id}"
-                title="Editar presente"
-                aria-label="Editar ${escapeHtml(gift.name || "presente")}"
-              >
-                ✎
-              </button>
-
-              <button
-                class="icon-button"
-                type="button"
-                data-admin-toggle-gift="${gift.id}"
-                title="${gift.active === false ? "Exibir no site" : "Ocultar do site"}"
-                aria-label="${gift.active === false ? "Exibir" : "Ocultar"} ${escapeHtml(gift.name || "presente")}"
-              >
-                ${gift.active === false ? "○" : "◉"}
-              </button>
-
-              <button
-                class="icon-button"
-                type="button"
-                data-admin-delete-gift="${gift.id}"
-                title="Excluir presente"
-                aria-label="Excluir ${escapeHtml(gift.name || "presente")}"
-              >
-                ×
-              </button>
-            </div>
-          </td>
-        </tr>
-      `;
-    })
-    .join("");
-}
-
-function render() {
-  renderSummary();
-  renderTable();
+            <button class="icon-button" type="button"
+              data-admin-delete-gift="${gift.id}" title="Excluir">×</button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join("");
 }
 
 async function saveGift(event) {
   event.preventDefault();
   event.stopImmediatePropagation();
 
+  if (!requireAdmin()) {
+    return;
+  }
+
   const name = document.querySelector("#giftName")?.value.trim() || "";
-  const category =
-    document.querySelector("#giftCategory")?.value || "Outro";
-  const description =
-    document.querySelector("#giftDescription")?.value.trim() || "";
-  const imageUrl =
-    document.querySelector("#giftImageUrl")?.value.trim() || "";
   const totalQuantity = normalizeInteger(
     document.querySelector("#giftTotalQuantity")?.value,
     0
   );
-  const order = normalizeInteger(
-    document.querySelector("#giftOrder")?.value,
-    0
-  );
-  const active =
-    document.querySelector("#giftActive")?.checked ?? true;
 
   if (name.length < 2) {
     showToast("Informe o nome do presente.", "error");
@@ -473,7 +454,7 @@ async function saveGift(event) {
   }
 
   if (totalQuantity < 1) {
-    showToast("Informe uma quantidade total válida.", "error");
+    showToast("Informe uma quantidade válida.", "error");
     return;
   }
 
@@ -487,37 +468,43 @@ async function saveGift(event) {
 
   if (totalQuantity < reservedQuantity) {
     showToast(
-      `A quantidade total não pode ser menor que as ${reservedQuantity} unidades já escolhidas.`,
+      `O total não pode ser menor que ${reservedQuantity}, pois essas unidades já foram escolhidas.`,
       "error"
     );
     return;
   }
 
-  const availableQuantity =
-    totalQuantity - reservedQuantity;
-
   const payload = {
     name,
-    category,
-    description,
-    imageUrl,
+    category:
+      document.querySelector("#giftCategory")?.value || "Outro",
+    description:
+      document.querySelector("#giftDescription")?.value.trim() || "",
+    imageUrl:
+      document.querySelector("#giftImageUrl")?.value.trim() || "",
+    order: normalizeInteger(
+      document.querySelector("#giftOrder")?.value,
+      0
+    ),
+    active:
+      document.querySelector("#giftActive")?.checked ?? true,
     totalQuantity,
-    availableQuantity,
+    availableQuantity: totalQuantity - reservedQuantity,
     reservedQuantity,
-    active,
-    order,
-    status: active ? "available" : "hidden",
-    updatedAt: serverTimestamp()
+    status:
+      (document.querySelector("#giftActive")?.checked ?? true)
+        ? "available"
+        : "hidden",
+    updatedAt: serverTimestamp(),
+    updatedBy: state.user.uid
   };
 
-  const submitButton = elements.form?.querySelector(
+  const submitButton = elements.form.querySelector(
     'button[type="submit"]'
   );
 
-  if (submitButton) {
-    submitButton.disabled = true;
-    submitButton.textContent = "Salvando...";
-  }
+  submitButton.disabled = true;
+  submitButton.textContent = "Salvando...";
 
   try {
     if (state.editingId) {
@@ -526,192 +513,198 @@ async function saveGift(event) {
         payload
       );
 
-      showToast("Presente atualizado com carinho.");
+      showToast("Presente atualizado.");
     } else {
       const newGiftReference = doc(giftsCollection);
 
       await setDoc(newGiftReference, {
         ...payload,
-        createdAt: serverTimestamp()
+        createdAt: serverTimestamp(),
+        createdBy: state.user.uid
       });
 
-      showToast("Presente adicionado à lista.");
+      showToast("Presente criado no Firebase.");
     }
 
     closeGiftModal();
   } catch (error) {
-    console.error("[ADMIN PRESENTES] Erro ao salvar:", error);
-
-    showToast(
-      "Não foi possível salvar o presente. Verifique sua conexão e suas permissões.",
-      "error"
-    );
-  } finally {
-    if (submitButton) {
-      submitButton.disabled = false;
-      submitButton.textContent = "Salvar presente";
-    }
-  }
-}
-
-async function toggleGift(giftId) {
-  const gift = state.gifts.find(item => item.id === giftId);
-
-  if (!gift) {
-    return;
-  }
-
-  try {
-    const nextActive = gift.active === false;
-
-    await updateDoc(doc(db, "gifts", giftId), {
-      active: nextActive,
-      status: nextActive ? "available" : "hidden",
-      updatedAt: serverTimestamp()
+    console.error("[ADMIN PRESENTES] Falha ao salvar:", {
+      code: error?.code,
+      message: error?.message,
+      error
     });
 
-    showToast(
-      nextActive
-        ? "Presente exibido na lista pública."
-        : "Presente ocultado da lista pública."
-    );
-  } catch (error) {
-    console.error("[ADMIN PRESENTES] Erro ao alterar exibição:", error);
-    showToast("Não foi possível alterar a exibição.", "error");
+    showToast(formatFirebaseError(error), "error", 10000);
+  } finally {
+    submitButton.disabled = false;
+    submitButton.textContent = "Salvar presente";
   }
 }
 
-async function removeGift(giftId) {
-  const gift = state.gifts.find(item => item.id === giftId);
+async function toggleGift(id) {
+  if (!requireAdmin()) {
+    return;
+  }
+
+  const gift = state.gifts.find(item => item.id === id);
 
   if (!gift) {
     return;
   }
 
-  const reserved = getReserved(gift);
+  try {
+    const active = gift.active === false;
 
-  const message = reserved > 0
-    ? `Este item possui ${reserved} unidades já escolhidas. Excluir mesmo assim?`
-    : `Excluir “${gift.name}” da lista?`;
+    await updateDoc(doc(db, "gifts", id), {
+      active,
+      status: active ? "available" : "hidden",
+      updatedAt: serverTimestamp(),
+      updatedBy: state.user.uid
+    });
 
-  if (!window.confirm(message)) {
+    showToast(active ? "Presente exibido." : "Presente ocultado.");
+  } catch (error) {
+    console.error(error);
+    showToast(formatFirebaseError(error), "error", 10000);
+  }
+}
+
+async function removeGift(id) {
+  if (!requireAdmin()) {
+    return;
+  }
+
+  const gift = state.gifts.find(item => item.id === id);
+
+  if (!gift || !confirm(`Excluir “${gift.name}”?`)) {
     return;
   }
 
   try {
-    await deleteDoc(doc(db, "gifts", giftId));
-    showToast("Presente removido da lista.");
+    await deleteDoc(doc(db, "gifts", id));
+    showToast("Presente excluído.");
   } catch (error) {
-    console.error("[ADMIN PRESENTES] Erro ao excluir:", error);
-    showToast("Não foi possível excluir o presente.", "error");
+    console.error(error);
+    showToast(formatFirebaseError(error), "error", 10000);
   }
 }
 
-function startRealtimeSync() {
+function startSync() {
   state.unsubscribe?.();
 
   state.unsubscribe = onSnapshot(
     giftsCollection,
     snapshot => {
-      state.gifts = snapshot.docs
-        .map(documentSnapshot => ({
-          id: documentSnapshot.id,
-          ...documentSnapshot.data()
-        }))
-        .sort((a, b) => {
-          const orderDifference =
-            normalizeInteger(a.order, 0) -
-            normalizeInteger(b.order, 0);
+      state.gifts = snapshot.docs.map(item => ({
+        id: item.id,
+        ...item.data()
+      })).sort((a, b) => {
+        const orderDifference =
+          normalizeInteger(a.order, 0) -
+          normalizeInteger(b.order, 0);
 
-          if (orderDifference !== 0) {
-            return orderDifference;
-          }
-
-          return String(a.name || "").localeCompare(
+        return orderDifference ||
+          String(a.name || "").localeCompare(
             String(b.name || ""),
             "pt-BR"
           );
-        });
+      });
 
       render();
     },
     error => {
-      console.error("[ADMIN PRESENTES] Erro ao sincronizar:", error);
-
-      showToast(
-        "Não foi possível carregar a lista de presentes do Firestore.",
-        "error"
-      );
+      console.error("[ADMIN PRESENTES] Falha na leitura:", error);
+      showToast(formatFirebaseError(error), "error", 10000);
     }
   );
 }
 
-/*
-  Intercepta o formulário antes do listener antigo do admin.js.
-  Isso evita que o presente seja salvo novamente no localStorage.
-*/
 elements.form?.addEventListener("submit", saveGift, true);
 
-elements.openButton?.addEventListener(
-  "click",
-  event => {
+elements.openButton?.addEventListener("click", event => {
+  event.preventDefault();
+  event.stopImmediatePropagation();
+  openGiftModal();
+}, true);
+
+document.addEventListener("click", event => {
+  const editButton = event.target.closest("[data-admin-edit-gift]");
+  const toggleButton = event.target.closest("[data-admin-toggle-gift]");
+  const deleteButton = event.target.closest("[data-admin-delete-gift]");
+
+  if (editButton) {
     event.preventDefault();
     event.stopImmediatePropagation();
-    openGiftModal();
-  },
-  true
-);
 
-document.addEventListener(
-  "click",
-  event => {
-    const editButton = event.target.closest(
-      "[data-admin-edit-gift]"
+    const gift = state.gifts.find(
+      item => item.id === editButton.dataset.adminEditGift
     );
 
-    if (editButton) {
-      event.preventDefault();
-      event.stopImmediatePropagation();
-
-      const gift = state.gifts.find(
-        item => item.id === editButton.dataset.adminEditGift
-      );
-
-      if (gift) {
-        openGiftModal(gift);
-      }
-
-      return;
+    if (gift) {
+      openGiftModal(gift);
     }
 
-    const toggleButton = event.target.closest(
-      "[data-admin-toggle-gift]"
-    );
+    return;
+  }
 
-    if (toggleButton) {
-      event.preventDefault();
-      event.stopImmediatePropagation();
+  if (toggleButton) {
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    toggleGift(toggleButton.dataset.adminToggleGift);
+    return;
+  }
 
-      toggleGift(toggleButton.dataset.adminToggleGift);
-      return;
-    }
-
-    const deleteButton = event.target.closest(
-      "[data-admin-delete-gift]"
-    );
-
-    if (deleteButton) {
-      event.preventDefault();
-      event.stopImmediatePropagation();
-
-      removeGift(deleteButton.dataset.adminDeleteGift);
-    }
-  },
-  true
-);
+  if (deleteButton) {
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    removeGift(deleteButton.dataset.adminDeleteGift);
+  }
+}, true);
 
 injectAdminInterface();
-startRealtimeSync();
+
+onAuthStateChanged(auth, async user => {
+  state.authReady = true;
+  state.user = user;
+  state.admin = null;
+
+  if (!user) {
+    showToast("Usuário não autenticado.", "error", 8000);
+    return;
+  }
+
+  try {
+    await loadAdminProfile(user);
+
+    if (!state.admin) {
+      showToast(
+        `Crie o documento admins/${user.uid} no Firestore para liberar o painel.`,
+        "error",
+        12000
+      );
+      return;
+    }
+
+    if (!isAuthorizedAdmin()) {
+      showToast(
+        "Administrador sem permissão ativa. Use active: true e role: owner.",
+        "error",
+        12000
+      );
+      return;
+    }
+
+    console.log("[ADMIN PRESENTES] Administrador autorizado:", {
+      uid: user.uid,
+      role: state.admin.role
+    });
+
+    startSync();
+  } catch (error) {
+    console.error("[ADMIN PRESENTES] Erro ao validar administrador:", error);
+    showToast(formatFirebaseError(error), "error", 10000);
+  }
+});
 
 window.addEventListener("beforeunload", () => {
   state.unsubscribe?.();
