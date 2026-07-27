@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#76549b">
+  <meta name="description" content="Confirme sua presença no Chá da Iúna em Bagé ou Porto Alegre.">
+  <title>Confirmar presença | Chá da Iúna</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="./assets/css/style.css">
+  <link rel="stylesheet" href="./assets/css/rsvp.css">
+</head>
+
+<body class="rsvp-page">
+  <header class="rsvp-header">
+    <div class="container rsvp-header-inner">
+      <a class="brand" href="./index.html" aria-label="Voltar para a página inicial">
+        <span class="brand-symbol">I</span>
+        <span>
+          <strong>Chá da Iúna</strong>
+          <small>confirmação de presença</small>
+        </span>
+      </a>
+
+      <a class="button button-secondary" href="./index.html">Voltar ao site</a>
+    </div>
+  </header>
+
+  <main>
+    <section class="rsvp-hero">
+      <div class="container rsvp-hero-grid">
+        <div>
+          <p class="eyebrow">Esperamos por você</p>
+          <h1>
+            Confirme seu abraço
+            <em>para a chegada da Iúna.</em>
+          </h1>
+
+          <p>
+            Sua resposta nos ajuda a organizar cada detalhe com calma,
+            cuidado e carinho.
+          </p>
+        </div>
+
+        <div class="event-info">
+          <article>
+            <strong>Bagé</strong>
+            <span>05/09/2026, às 15h</span>
+            <small>Sítio Mãe Velha</small>
+          </article>
+
+          <article>
+            <strong>Porto Alegre</strong>
+            <span>Data e horário a definir</span>
+            <small>Rua Martins de Lima, 20</small>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="confirmationArea">
+      <div class="container rsvp-layout">
+        <form id="rsvpForm" class="rsvp-form" novalidate>
+          <section class="form-card">
+            <p class="eyebrow">1. Sobre você</p>
+            <h2>Quem está confirmando?</h2>
+
+            <div class="form-grid">
+              <label>
+                <span>Nome completo</span>
+                <input
+                  id="name"
+                  type="text"
+                  maxlength="100"
+                  autocomplete="name"
+                  required
+                  placeholder="Seu nome"
+                >
+              </label>
+
+              <label>
+                <span>WhatsApp</span>
+                <input
+                  id="phone"
+                  type="tel"
+                  maxlength="16"
+                  inputmode="tel"
+                  autocomplete="tel"
+                  required
+                  placeholder="(00) 00000-0000"
+                >
+              </label>
+            </div>
+
+            <label>
+              <span>E-mail opcional</span>
+              <input
+                id="email"
+                type="email"
+                maxlength="120"
+                autocomplete="email"
+                placeholder="voce@exemplo.com"
+              >
+            </label>
+          </section>
+
+          <section class="form-card">
+            <p class="eyebrow">2. Nosso encontro</p>
+            <h2>Em qual celebração você estará?</h2>
+
+            <div class="event-options">
+              <label>
+                <input type="radio" name="event" value="bage">
+                <span>
+                  <strong>Bagé</strong>
+                  <small>05/09/2026, às 15h</small>
+                  <em>Sítio Mãe Velha</em>
+                </span>
+              </label>
+
+              <label>
+                <input type="radio" name="event" value="porto-alegre">
+                <span>
+                  <strong>Porto Alegre</strong>
+                  <small>Data a definir</small>
+                  <em>Rua Martins de Lima, 20</em>
+                </span>
+              </label>
+
+              <label>
+                <input type="radio" name="event" value="ambos">
+                <span>
+                  <strong>As duas celebrações</strong>
+                  <small>Bagé + Porto Alegre</small>
+                  <em>Quero estar nos dois encontros</em>
+                </span>
+              </label>
+
+              <label class="declined-option">
+                <input type="radio" name="event" value="nao-vou">
+                <span>
+                  <strong>Não poderei participar</strong>
+                  <small>Envio meu carinho</small>
+                  <em>Sua resposta também nos ajuda</em>
+                </span>
+              </label>
+            </div>
+          </section>
+
+          <section class="form-card" id="attendanceDetails">
+            <p class="eyebrow">3. Seu grupo</p>
+            <h2>Quem vem com você?</h2>
+
+            <div class="form-grid">
+              <label>
+                <span>Total de pessoas, incluindo você</span>
+                <input id="people" type="number" min="1" max="15" value="1">
+              </label>
+
+              <label>
+                <span>Quantas crianças?</span>
+                <input id="children" type="number" min="0" max="10" value="0">
+              </label>
+            </div>
+
+            <label>
+              <span>Nomes dos acompanhantes</span>
+              <textarea
+                id="companions"
+                rows="3"
+                maxlength="300"
+                placeholder="Ex.: Maria, João e Pedro"
+              ></textarea>
+            </label>
+
+            <div class="form-grid">
+              <label>
+                <span>Como você faz parte da nossa história?</span>
+                <select id="relationship">
+                  <option value="">Selecione</option>
+                  <option value="familia">Família</option>
+                  <option value="amigos">Amigos</option>
+                  <option value="capoeira">Capoeira</option>
+                  <option value="trabalho">Trabalho</option>
+                  <option value="outro">Outro</option>
+                </select>
+              </label>
+
+              <label>
+                <span>Cidade</span>
+                <input id="city" maxlength="80" placeholder="Sua cidade">
+              </label>
+            </div>
+          </section>
+
+          <section class="form-card">
+            <p class="eyebrow">4. Cuidado com todos</p>
+            <h2>Alguma informação importante?</h2>
+
+            <label>
+              <span>Restrições alimentares ou acessibilidade</span>
+              <textarea
+                id="dietary"
+                rows="3"
+                maxlength="400"
+                placeholder="Alergias, intolerâncias ou necessidades especiais"
+              ></textarea>
+            </label>
+
+            <label>
+              <span>Recadinho opcional</span>
+              <textarea
+                id="message"
+                rows="4"
+                maxlength="500"
+                placeholder="Deixe uma mensagem carinhosa para a família"
+              ></textarea>
+            </label>
+
+            <label class="consent">
+              <input id="consent" type="checkbox">
+              <span>
+                Autorizo o uso destas informações somente para organizar
+                as celebrações do Chá da Iúna.
+              </span>
+            </label>
+          </section>
+
+          <input id="editToken" type="hidden">
+
+          <div class="submit-area">
+            <button id="submitButton" class="button button-primary" type="submit">
+              Confirmar minha resposta
+            </button>
+
+            <div id="feedback" class="form-feedback" role="status" aria-live="polite"></div>
+          </div>
+        </form>
+
+        <aside class="lookup-card">
+          <p class="eyebrow">Já confirmou?</p>
+          <h2>Consulte ou atualize</h2>
+
+          <p>
+            Use o protocolo recebido após a sua confirmação.
+          </p>
+
+          <form id="lookupForm">
+            <label>
+              <span>Protocolo</span>
+              <input
+                id="lookupCode"
+                maxlength="20"
+                autocomplete="off"
+                placeholder="IUNA-AB12CD"
+              >
+            </label>
+
+            <button class="button button-secondary" type="submit">
+              Consultar confirmação
+            </button>
+          </form>
+
+          <div
+            id="lookupFeedback"
+            class="form-feedback"
+            role="status"
+            aria-live="polite"
+          ></div>
+        </aside>
+      </div>
+    </section>
+
+    <section id="success" class="success-section" hidden>
+      <div class="container">
+        <div class="success-card">
+          <span class="success-icon">✓</span>
+          <p class="eyebrow">Resposta recebida</p>
+
+          <h2 id="successTitle">Obrigado por confirmar!</h2>
+          <p id="successText"></p>
+
+          <div class="protocol-box">
+            <small>Seu protocolo para consultar ou editar</small>
+            <strong id="protocol"></strong>
+            <button id="copyProtocol" type="button">Copiar protocolo</button>
+          </div>
+
+          <a class="button button-primary" href="./index.html">
+            Voltar ao site
+          </a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script type="module" src="./assets/js/rsvp.js"></script>
+</body>
+</html>

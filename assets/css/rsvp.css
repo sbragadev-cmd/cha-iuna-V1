@@ -1,0 +1,338 @@
+.rsvp-page {
+  background: #faf8fc;
+}
+
+.rsvp-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  border-bottom: 1px solid rgba(118, 84, 155, 0.13);
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(15px);
+}
+
+.rsvp-header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 76px;
+  gap: 1rem;
+}
+
+.rsvp-hero {
+  padding: 4rem 0;
+  background:
+    radial-gradient(circle at 10% 10%, rgba(242, 201, 76, 0.2), transparent 25%),
+    radial-gradient(circle at 90% 10%, rgba(118, 84, 155, 0.18), transparent 25%),
+    linear-gradient(135deg, #ffffff, #f6eef9);
+}
+
+.rsvp-hero-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(300px, 0.8fr);
+  gap: 3rem;
+  align-items: center;
+}
+
+.rsvp-hero h1 {
+  margin: 0.5rem 0 1rem;
+  font-family: "Playfair Display", serif;
+  font-size: clamp(2.4rem, 5vw, 4.8rem);
+  line-height: 1.05;
+}
+
+.rsvp-hero h1 em {
+  display: block;
+  color: #76549b;
+  font-style: normal;
+}
+
+.rsvp-hero p {
+  max-width: 650px;
+  color: #6f6874;
+  font-size: 1.05rem;
+  line-height: 1.7;
+}
+
+.event-info {
+  display: grid;
+  gap: 1rem;
+}
+
+.event-info article,
+.rsvp-form,
+.lookup-card,
+.success-card {
+  border: 1px solid rgba(118, 84, 155, 0.13);
+  border-radius: 24px;
+  background: #ffffff;
+  box-shadow: 0 18px 50px rgba(74, 48, 92, 0.08);
+}
+
+.event-info article {
+  display: grid;
+  gap: 0.3rem;
+  padding: 1.2rem;
+}
+
+.event-info strong {
+  color: #76549b;
+}
+
+.event-info small {
+  color: #746e77;
+}
+
+.rsvp-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 2rem;
+  align-items: start;
+}
+
+.rsvp-form {
+  overflow: hidden;
+}
+
+.form-card {
+  padding: 2rem;
+  border-bottom: 1px solid rgba(118, 84, 155, 0.1);
+}
+
+.form-card h2 {
+  margin: 0.3rem 0 1.2rem;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.form-card label,
+.lookup-card label {
+  display: grid;
+  gap: 0.4rem;
+  margin-top: 1rem;
+}
+
+.form-card input,
+.form-card select,
+.form-card textarea,
+.lookup-card input {
+  width: 100%;
+  padding: 0.85rem 0.95rem;
+  border: 1px solid rgba(118, 84, 155, 0.22);
+  border-radius: 14px;
+  background: #ffffff;
+  color: #302b34;
+  font: inherit;
+}
+
+.form-card input:focus,
+.form-card select:focus,
+.form-card textarea:focus,
+.lookup-card input:focus {
+  outline: 3px solid rgba(118, 84, 155, 0.12);
+  border-color: #76549b;
+}
+
+.event-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.event-options label {
+  position: relative;
+  margin: 0;
+}
+
+.event-options input {
+  position: absolute;
+  opacity: 0;
+}
+
+.event-options span {
+  display: grid;
+  min-height: 135px;
+  align-content: center;
+  gap: 0.3rem;
+  padding: 1rem;
+  border: 2px solid rgba(118, 84, 155, 0.14);
+  border-radius: 18px;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.event-options span strong {
+  color: #76549b;
+}
+
+.event-options span small {
+  color: #3d3740;
+  font-weight: 600;
+}
+
+.event-options span em {
+  color: #777079;
+  font-size: 0.85rem;
+  font-style: normal;
+}
+
+.event-options input:checked + span {
+  border-color: #76549b;
+  background: #f7f0fb;
+  box-shadow: 0 12px 30px rgba(118, 84, 155, 0.12);
+}
+
+.declined-option input:checked + span {
+  border-color: #b26666;
+  background: #fff4f4;
+}
+
+.form-card.disabled {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.consent {
+  display: flex !important;
+  grid-template-columns: auto 1fr !important;
+  align-items: flex-start;
+  gap: 0.7rem !important;
+}
+
+.consent input {
+  width: 20px;
+  margin-top: 0.2rem;
+}
+
+.submit-area {
+  padding: 1.5rem 2rem 2rem;
+}
+
+.lookup-card {
+  position: sticky;
+  top: 100px;
+  padding: 1.5rem;
+}
+
+.lookup-card h2 {
+  margin: 0.3rem 0 0.7rem;
+}
+
+.lookup-card form {
+  display: grid;
+  gap: 0.8rem;
+  margin-top: 1rem;
+}
+
+.form-feedback {
+  min-height: 24px;
+  margin-top: 0.8rem;
+}
+
+.form-feedback.is-error {
+  color: #a33131;
+}
+
+.form-feedback.is-success {
+  color: #337447;
+}
+
+.success-section {
+  padding: 5rem 0;
+}
+
+.success-card {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 3rem;
+  text-align: center;
+}
+
+.success-icon {
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 1rem;
+  border-radius: 50%;
+  background: #e8f4eb;
+  color: #3e8053;
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+.protocol-box {
+  display: grid;
+  gap: 0.4rem;
+  max-width: 420px;
+  margin: 1.5rem auto;
+  padding: 1.2rem;
+  border-radius: 18px;
+  background: #f7f0fb;
+}
+
+.protocol-box strong {
+  color: #76549b;
+  font-size: 1.4rem;
+  letter-spacing: 0.08em;
+}
+
+.protocol-box button {
+  justify-self: center;
+  border: 0;
+  background: transparent;
+  color: #76549b;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+@media (max-width: 900px) {
+  .rsvp-hero-grid,
+  .rsvp-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .lookup-card {
+    position: static;
+  }
+}
+
+@media (max-width: 640px) {
+  .rsvp-header-inner {
+    min-height: 68px;
+  }
+
+  .rsvp-header .button {
+    padding: 0.7rem 0.85rem;
+    font-size: 0.82rem;
+  }
+
+  .rsvp-hero {
+    padding: 3rem 0 2rem;
+  }
+
+  .form-grid,
+  .event-options {
+    grid-template-columns: 1fr;
+  }
+
+  .form-card {
+    padding: 1.3rem;
+  }
+
+  .submit-area {
+    padding: 1.2rem;
+  }
+
+  .submit-area .button {
+    width: 100%;
+  }
+
+  .success-card {
+    padding: 2rem 1.2rem;
+  }
+}
