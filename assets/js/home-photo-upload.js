@@ -51,12 +51,14 @@ function updatePreview() {
     const image = document.createElement("img");
     const removeButton = document.createElement("button");
 
-    image.src = URL.createObjectURL(file);
+    const objectURL = URL.createObjectURL(file);
+
+    image.src = objectURL;
     image.alt = `Prévia da foto ${index + 1}`;
 
     image.addEventListener(
       "load",
-      () => URL.revokeObjectURL(image.src),
+      () => URL.revokeObjectURL(objectURL),
       { once: true }
     );
 
@@ -83,7 +85,7 @@ function validateFiles(files) {
   for (const file of files) {
     if (!ALLOWED_TYPES.includes(file.type)) {
       setFeedback(
-        `O arquivo "${file.name}" não é uma imagem JPG, PNG ou WEBP.`,
+        `O arquivo "${file.name}" não é JPG, PNG ou WEBP.`,
         "error"
       );
       continue;
@@ -91,7 +93,7 @@ function validateFiles(files) {
 
     if (file.size > MAX_FILE_SIZE) {
       setFeedback(
-        `A imagem "${file.name}" ultrapassa o limite de 8 MB.`,
+        `A imagem "${file.name}" ultrapassa 8 MB.`,
         "error"
       );
       continue;
@@ -130,6 +132,30 @@ function safeFileName(fileName) {
     .toLowerCase();
 }
 
+function describeFirebaseError(error) {
+  const code = error?.code || "";
+
+  const messages = {
+    "storage/unauthorized":
+      "O Firebase Storage recusou o envio ou a leitura da imagem. Publique as regras de Storage corrigidas.",
+    "storage/object-not-found":
+      "O arquivo não foi localizado depois do envio.",
+    "storage/retry-limit-exceeded":
+      "A conexão falhou várias vezes. Tente novamente.",
+    "storage/invalid-format":
+      "O formato da imagem não foi aceito.",
+    "storage/canceled":
+      "O envio foi cancelado.",
+    "permission-denied":
+      "O Firestore recusou o cadastro das informações. Publique as regras do Firestore corrigidas.",
+    "firestore/permission-denied":
+      "O Firestore recusou o cadastro das informações. Publique as regras do Firestore corrigidas."
+  };
+
+  return messages[code]
+    || `Não foi possível concluir o envio (${code || "erro desconhecido"}).`;
+}
+
 function uploadFile(file, path, onProgress) {
   return new Promise((resolve, reject) => {
     const storageReference = ref(storage, path);
@@ -157,13 +183,17 @@ function uploadFile(file, path, onProgress) {
       },
       reject,
       async () => {
-        const downloadURL =
-          await getDownloadURL(task.snapshot.ref);
+        try {
+          const downloadURL =
+            await getDownloadURL(task.snapshot.ref);
 
-        resolve({
-          downloadURL,
-          storagePath: task.snapshot.ref.fullPath
-        });
+          resolve({
+            downloadURL,
+            storagePath: task.snapshot.ref.fullPath
+          });
+        } catch (error) {
+          reject(error);
+        }
       }
     );
   });
@@ -200,7 +230,7 @@ form?.addEventListener("submit", async event => {
 
   if (!consent) {
     setFeedback(
-      "Precisamos da sua autorização para guardar as fotos.",
+      "Marque a autorização para enviar as fotos.",
       "error"
     );
     return;
@@ -212,18 +242,27 @@ form?.addEventListener("submit", async event => {
   progressBar.style.width = "0%";
   progressText.textContent = "Preparando o envio...";
 
+  const randomId =
+    typeof crypto.randomUUID === "function"
+      ? crypto.randomUUID()
+      : Math.random().toString(36).slice(2);
+
   const submissionId =
-    `${Date.now()}-${crypto.randomUUID?.() || Math.random().toString(36).slice(2)}`;
+    `${Date.now()}-${randomId}`;
 
   const uploadedPhotos = [];
 
   try {
-    for (let index = 0; index < selectedFiles.length; index += 1) {
+    for (
+      let index = 0;
+      index < selectedFiles.length;
+      index += 1
+    ) {
       const file = selectedFiles[index];
 
       const path =
-        `guest-photos/${new Date().getFullYear()}/${submissionId}/` +
-        `${index + 1}-${safeFileName(file.name)}`;
+        `guest-photos/${new Date().getFullYear()}/` +
+        `${submissionId}/${index + 1}-${safeFileName(file.name)}`;
 
       const uploadedPhoto = await uploadFile(
         file,
@@ -247,6 +286,9 @@ form?.addEventListener("submit", async event => {
         size: file.size
       });
     }
+
+    progressText.textContent =
+      "Salvando informações no banco de dados...";
 
     await addDoc(
       collection(db, "photoSubmissions"),
@@ -272,25 +314,28 @@ form?.addEventListener("submit", async event => {
     progressText.textContent = "Envio concluído.";
 
     setFeedback(
-      "Fotos enviadas com carinho! Elas aparecerão na galeria após a aprovação dos pais.",
+      "Fotos enviadas! Elas aparecerão depois da aprovação dos pais.",
       "success"
     );
   } catch (error) {
     console.error(
-      "[FOTOS] Erro no envio:",
+      "[FOTOS] Erro completo no envio:",
       error
     );
 
     setFeedback(
-      "Não foi possível concluir o envio. Verifique as regras do Storage e do Firestore.",
+      describeFirebaseError(error),
       "error"
     );
+
+    progressText.textContent =
+      "O envio não foi concluído.";
   } finally {
     submitButton.disabled = false;
     submitButton.textContent = "Enviar fotos";
 
     window.setTimeout(() => {
       progressBox.hidden = true;
-    }, 2500);
+    }, 3500);
   }
 });

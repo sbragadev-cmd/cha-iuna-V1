@@ -38,40 +38,15 @@ const categoryLabels = {
   "porto-alegre": "Porto Alegre",
   familia: "Família",
   amigos: "Amigos",
-  outro: "Outro momento"
+  outro: "Outro momento",
+  geral: "Lembrança"
 };
 
 let allPhotos = [];
 let filteredPhotos = [];
 let visibleCount = PAGE_SIZE;
-let activeFilter = "all";
 let lightboxIndex = 0;
 let previousFocus = null;
-
-function normalizePhoto(photo, submissionData, submissionId, index) {
-  return {
-    id: `${submissionId}-${index}`,
-    downloadURL:
-      photo.downloadURL ||
-      photo.url ||
-      "",
-    caption:
-      photo.caption ||
-      submissionData.caption ||
-      "Uma lembrança compartilhada com carinho.",
-    senderName:
-      photo.senderName ||
-      submissionData.senderName ||
-      "Pessoa querida",
-    event:
-      photo.event ||
-      submissionData.event ||
-      "outro",
-    createdAt:
-      submissionData.createdAt ||
-      null
-  };
-}
 
 function escapeText(value) {
   return String(value || "")
@@ -92,12 +67,12 @@ function createGalleryCard(photo, index) {
   button.type = "button";
   button.setAttribute(
     "aria-label",
-    `Ampliar fotografia: ${photo.caption}`
+    `Ampliar fotografia: ${photo.caption || "Lembrança da Iúna"}`
   );
 
   const image = document.createElement("img");
-  image.src = photo.downloadURL;
-  image.alt = photo.caption;
+  image.src = photo.imageData;
+  image.alt = photo.caption || "Fotografia da galeria da Iúna";
   image.loading = index < 4 ? "eager" : "lazy";
   image.decoding = "async";
 
@@ -109,11 +84,11 @@ function createGalleryCard(photo, index) {
     </span>
 
     <strong>
-      ${escapeText(photo.caption)}
+      ${escapeText(photo.caption || "Uma lembrança especial")}
     </strong>
 
     <small>
-      Enviada por ${escapeText(photo.senderName)}
+      Enviada por ${escapeText(photo.senderName || "Pessoa querida")}
     </small>
   `;
 
@@ -153,13 +128,14 @@ function renderGallery() {
   galleryEmpty.hidden = hasPhotos;
   galleryGrid.hidden = !hasPhotos;
 
-  loadMoreBox.hidden =
-    !hasPhotos ||
-    visibleCount >= filteredPhotos.length;
+  if (loadMoreBox) {
+    loadMoreBox.hidden =
+      !hasPhotos ||
+      visibleCount >= filteredPhotos.length;
+  }
 }
 
 function applyFilter(filter) {
-  activeFilter = filter;
   visibleCount = PAGE_SIZE;
 
   filteredPhotos =
@@ -183,90 +159,69 @@ function applyFilter(filter) {
 
 async function loadGallery() {
   try {
-    const submissionsQuery = query(
-      collection(db, "photoSubmissions"),
+    const photosQuery = query(
+      collection(db, "photos"),
       where("status", "==", "published"),
       orderBy("createdAt", "desc")
     );
 
-    const snapshot =
-      await getDocs(submissionsQuery);
+    const snapshot = await getDocs(photosQuery);
 
-    const photos = [];
+    allPhotos = snapshot.docs
+      .map(documentSnapshot => ({
+        id: documentSnapshot.id,
+        ...documentSnapshot.data()
+      }))
+      .filter(photo => Boolean(photo.imageData));
 
-    snapshot.forEach(documentSnapshot => {
-      const data =
-        documentSnapshot.data();
-
-      const submissionPhotos =
-        Array.isArray(data.photos)
-          ? data.photos
-          : [];
-
-      submissionPhotos.forEach((photo, index) => {
-        const normalizedPhoto =
-          normalizePhoto(
-            photo,
-            data,
-            documentSnapshot.id,
-            index
-          );
-
-        if (normalizedPhoto.downloadURL) {
-          photos.push(normalizedPhoto);
-        }
-      });
-    });
-
-    allPhotos = photos;
     filteredPhotos = [...allPhotos];
 
-    galleryStatus.hidden = true;
+    if (galleryStatus) {
+      galleryStatus.hidden = true;
+    }
+
     renderGallery();
   } catch (error) {
-    console.error(
-      "[GALERIA] Erro ao carregar fotos:",
-      error
-    );
+    console.error("[GALERIA] Erro ao carregar fotos:", error);
 
-    galleryStatus.innerHTML = `
-      <p>
-        Não foi possível carregar a galeria agora.
-        Verifique as regras e o índice do Firestore.
-      </p>
-    `;
+    if (galleryStatus) {
+      galleryStatus.innerHTML = `
+        <p>
+          Não foi possível carregar a galeria.
+          Verifique as regras e o índice do Firestore.
+        </p>
+      `;
+    }
 
-    galleryCount.textContent = "0";
+    if (galleryCount) {
+      galleryCount.textContent = "0";
+    }
   }
 }
 
 function updateLightbox() {
-  const photo =
-    filteredPhotos[lightboxIndex];
+  const photo = filteredPhotos[lightboxIndex];
 
   if (!photo) {
     closeLightbox();
     return;
   }
 
-  lightboxImage.src =
-    photo.downloadURL;
-
+  lightboxImage.src = photo.imageData;
   lightboxImage.alt =
-    photo.caption;
+    photo.caption || "Fotografia da galeria da Iúna";
 
   lightboxCategory.textContent =
-    categoryLabels[photo.event] ||
-    "Lembrança";
+    categoryLabels[photo.event] || "Lembrança";
 
   lightboxTitle.textContent =
-    photo.caption;
+    photo.caption || "Uma lembrança especial";
 
   lightboxCaption.textContent =
-    `Esta fotografia faz parte do álbum da Iúna e foi compartilhada com muito carinho.`;
+    "Esta fotografia faz parte do álbum da Iúna.";
 
   lightboxSender.textContent =
-    photo.senderName;
+    photo.senderName || "Pessoa querida";
 
   lightboxPrevious.disabled =
     filteredPhotos.length <= 1;
@@ -297,7 +252,9 @@ function closeLightbox() {
   lightbox.hidden = true;
   document.body.classList.remove("lightbox-open");
 
-  lightboxImage.src = "";
+  if (lightboxImage) {
+    lightboxImage.src = "";
+  }
 
   previousFocus?.focus?.();
 }
@@ -306,8 +263,8 @@ function showPreviousPhoto() {
   if (!filteredPhotos.length) return;
 
   lightboxIndex =
-    (lightboxIndex - 1 + filteredPhotos.length) %
-    filteredPhotos.length;
+    (lightboxIndex - 1 + filteredPhotos.length)
+    % filteredPhotos.length;
 
   updateLightbox();
 }
@@ -316,17 +273,15 @@ function showNextPhoto() {
   if (!filteredPhotos.length) return;
 
   lightboxIndex =
-    (lightboxIndex + 1) %
-    filteredPhotos.length;
+    (lightboxIndex + 1)
+    % filteredPhotos.length;
 
   updateLightbox();
 }
 
 filterButtons.forEach(button => {
   button.addEventListener("click", () => {
-    applyFilter(
-      button.dataset.filter || "all"
-    );
+    applyFilter(button.dataset.filter || "all");
   });
 });
 
@@ -338,10 +293,7 @@ loadMoreButton?.addEventListener("click", () => {
 document
   .querySelectorAll("[data-lightbox-close]")
   .forEach(element => {
-    element.addEventListener(
-      "click",
-      closeLightbox
-    );
+    element.addEventListener("click", closeLightbox);
   });
 
 lightboxPrevious?.addEventListener(
