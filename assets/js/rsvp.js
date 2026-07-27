@@ -1,13 +1,7 @@
 import {
   addDoc,
   collection,
-  getDocs,
-  limit,
-  query,
-  serverTimestamp,
-  updateDoc,
-  doc,
-  where
+  serverTimestamp
 } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 
 import { db } from "./firebase-config.js";
@@ -15,93 +9,57 @@ import { db } from "./firebase-config.js";
 console.log("[CONFIRMAÇÃO] Script carregado.");
 console.log("[CONFIRMAÇÃO] Firestore disponível:", Boolean(db));
 
-const $ = selector => document.querySelector(selector);
+const form = document.querySelector("#rsvpForm");
+const feedback = document.querySelector("#feedback");
+const submitButton = document.querySelector("#submitButton");
 
-const requiredElements = {
-  form: $("#rsvpForm"),
-  feedback: $("#feedback"),
-  submitButton: $("#submitButton"),
-  attendanceDetails: $("#attendanceDetails"),
-  confirmationArea: $("#confirmationArea"),
-  successSection: $("#success"),
-  name: $("#name"),
-  phone: $("#phone"),
-  email: $("#email"),
-  people: $("#people"),
-  children: $("#children"),
-  companions: $("#companions"),
-  relationship: $("#relationship"),
-  city: $("#city"),
-  dietary: $("#dietary"),
-  message: $("#message"),
-  consent: $("#consent"),
-  editToken: $("#editToken"),
-  lookupForm: $("#lookupForm"),
-  lookupCode: $("#lookupCode"),
-  lookupFeedback: $("#lookupFeedback"),
-  protocol: $("#protocol"),
-  successTitle: $("#successTitle"),
-  successText: $("#successText"),
-  copyProtocol: $("#copyProtocol")
-};
-
-const missingElements = Object.entries(requiredElements)
-  .filter(([, element]) => !element)
-  .map(([name]) => name);
-
-if (missingElements.length) {
-  console.error(
-    "[CONFIRMAÇÃO] Elementos ausentes no HTML:",
-    missingElements
-  );
-
-  throw new Error(
-    `A página está incompleta. Elementos ausentes: ${missingElements.join(", ")}`
-  );
+if (!form) {
+  console.error("[CONFIRMAÇÃO] Formulário #rsvpForm não encontrado.");
+  throw new Error("O formulário de confirmação não foi encontrado no HTML.");
 }
 
-const {
-  form,
-  feedback,
-  submitButton,
-  attendanceDetails,
-  confirmationArea,
-  successSection
-} = requiredElements;
+function showFeedback(message = "", type = "") {
+  if (!feedback) return;
 
-let editingDocumentId = null;
+  feedback.textContent = message;
+  feedback.className = "form-feedback";
+
+  if (type) {
+    feedback.classList.add(`is-${type}`);
+  }
+}
 
 function onlyDigits(value = "") {
   return String(value).replace(/\D/g, "");
 }
 
-function formatPhone(value = "") {
-  const number = onlyDigits(value).slice(0, 11);
-
-  if (number.length <= 2) return number;
-  if (number.length <= 6) {
-    return `(${number.slice(0, 2)}) ${number.slice(2)}`;
-  }
-
-  if (number.length <= 10) {
-    return `(${number.slice(0, 2)}) ${number.slice(2, 6)}-${number.slice(6)}`;
-  }
-
-  return `(${number.slice(0, 2)}) ${number.slice(2, 7)}-${number.slice(7)}`;
+function getElement(selector) {
+  return document.querySelector(selector);
 }
 
-function normalizeInteger(value, fallback = 0) {
-  const parsed = Number(value);
+function getValue(selector, fallback = "") {
+  const element = getElement(selector);
+  return element ? String(element.value ?? "").trim() : fallback;
+}
 
-  if (!Number.isFinite(parsed)) {
+function getNumber(selector, fallback = 0) {
+  const value = Number(getValue(selector, fallback));
+
+  if (!Number.isFinite(value)) {
     return fallback;
   }
 
-  return Math.max(0, Math.trunc(parsed));
+  return Math.max(0, Math.trunc(value));
 }
 
-function selectedEvent() {
-  return form.querySelector('input[name="event"]:checked')?.value || "";
+function getCheckedValue(name) {
+  return document.querySelector(
+    `input[name="${name}"]:checked`
+  )?.value || "";
+}
+
+function isChecked(selector) {
+  return Boolean(getElement(selector)?.checked);
 }
 
 function createProtocol() {
@@ -113,235 +71,136 @@ function createProtocol() {
   return `IUNA-${code}`;
 }
 
-function setFeedback(element, message = "", type = "") {
-  element.textContent = message;
-  element.className = "form-feedback";
-
-  if (type) {
-    element.classList.add(`is-${type}`);
-  }
-}
-
-function toggleAttendanceDetails() {
-  const declined = selectedEvent() === "nao-vou";
-
-  attendanceDetails.classList.toggle("disabled", declined);
-
-  attendanceDetails
-    .querySelectorAll("input, select, textarea")
-    .forEach(field => {
-      field.disabled = declined;
-    });
-
-  if (declined) {
-    requiredElements.people.value = 0;
-    requiredElements.children.value = 0;
-    requiredElements.companions.value = "";
-    requiredElements.relationship.value = "";
-    requiredElements.city.value = "";
-  } else if (normalizeInteger(requiredElements.people.value, 0) < 1) {
-    requiredElements.people.value = 1;
-  }
-}
-
-function validateForm() {
-  const name = requiredElements.name.value.trim();
-  const phone = onlyDigits(requiredElements.phone.value);
-  const event = selectedEvent();
-  const people = normalizeInteger(requiredElements.people.value, 0);
-  const children = normalizeInteger(requiredElements.children.value, 0);
-
-  if (name.length < 2) {
-    requiredElements.name.focus();
+function validate(data) {
+  if (data.name.length < 2) {
     throw new Error("Informe seu nome completo.");
   }
 
-  if (phone.length < 10) {
-    requiredElements.phone.focus();
+  if (data.phoneDigits.length < 10) {
     throw new Error("Informe um WhatsApp válido.");
   }
 
-  if (!event) {
+  if (!data.event) {
     throw new Error("Escolha uma opção de presença.");
   }
 
-  if (event !== "nao-vou") {
-    if (people < 1 || people > 15) {
-      requiredElements.people.focus();
+  if (data.event !== "nao-vou") {
+    if (data.people < 1 || data.people > 15) {
       throw new Error("Informe o total de pessoas entre 1 e 15.");
     }
 
-    if (children > people) {
-      requiredElements.children.focus();
+    if (data.children > data.people) {
       throw new Error(
         "O número de crianças não pode superar o total de pessoas."
       );
     }
   }
 
-  if (!requiredElements.consent.checked) {
-    requiredElements.consent.focus();
+  const consentElement = getElement("#consent");
+
+  if (consentElement && !data.consent) {
     throw new Error(
       "Autorize o uso dos dados para a organização."
     );
   }
 }
 
-function createPayload(protocol, editToken) {
-  const event = selectedEvent();
+function buildPayload() {
+  const event = getCheckedValue("event");
   const declined = event === "nao-vou";
+  const name = getValue("#name");
+  const phone = getValue("#phone");
+  const phoneDigits = onlyDigits(phone);
 
   return {
-    protocol,
-    editToken,
-    name: requiredElements.name.value.trim(),
-    nameSearch: requiredElements.name.value.trim().toLowerCase(),
-    phone: formatPhone(requiredElements.phone.value),
-    phoneDigits: onlyDigits(requiredElements.phone.value),
-    email: requiredElements.email.value.trim().toLowerCase(),
+    protocol: createProtocol(),
+    editToken: crypto.randomUUID(),
+    name,
+    nameSearch: name.toLowerCase(),
+    phone,
+    phoneDigits,
+    email: getValue("#email").toLowerCase(),
     event,
     status: declined ? "declined" : "confirmed",
-    people: declined
-      ? 0
-      : normalizeInteger(requiredElements.people.value, 1),
-    children: declined
-      ? 0
-      : normalizeInteger(requiredElements.children.value, 0),
-    companions: declined
-      ? ""
-      : requiredElements.companions.value.trim(),
-    relationship: declined
-      ? ""
-      : requiredElements.relationship.value,
-    city: declined
-      ? ""
-      : requiredElements.city.value.trim(),
-    dietary: declined
-      ? ""
-      : requiredElements.dietary.value.trim(),
-    message: requiredElements.message.value.trim(),
-    consent: true,
+    people: declined ? 0 : getNumber("#people", 1),
+    children: declined ? 0 : getNumber("#children", 0),
+    companions: declined ? "" : getValue("#companions"),
+    relationship: declined ? "" : getValue("#relationship"),
+    city: declined ? "" : getValue("#city"),
+    dietary: declined ? "" : getValue("#dietary"),
+    message: getValue("#message"),
+    consent: getElement("#consent")
+      ? isChecked("#consent")
+      : true,
     source: "site",
+    createdAt: serverTimestamp(),
     updatedAt: serverTimestamp()
   };
 }
 
-async function findByProtocol(protocol) {
-  console.log("[CONFIRMAÇÃO] Consultando protocolo:", protocol);
+function showSuccess(data) {
+  const confirmationArea = getElement("#confirmationArea");
+  const successSection = getElement("#success");
+  const successTitle = getElement("#successTitle");
+  const successText = getElement("#successText");
+  const protocol = getElement("#protocol");
 
-  const confirmationQuery = query(
-    collection(db, "rsvps"),
-    where("protocol", "==", protocol.toUpperCase()),
-    limit(1)
-  );
-
-  const snapshot = await getDocs(confirmationQuery);
-
-  if (snapshot.empty) {
-    return null;
+  if (confirmationArea) {
+    confirmationArea.hidden = true;
   }
 
-  return {
-    id: snapshot.docs[0].id,
-    ...snapshot.docs[0].data()
-  };
-}
+  if (successSection) {
+    successSection.hidden = false;
+  }
 
-function showSuccess(data, updated = false) {
-  confirmationArea.hidden = true;
-  successSection.hidden = false;
+  if (successTitle) {
+    successTitle.textContent =
+      data.status === "declined"
+        ? "Recebemos sua resposta com carinho."
+        : "Presença confirmada com carinho!";
+  }
 
-  requiredElements.successTitle.textContent = updated
-    ? "Sua resposta foi atualizada."
-    : data.status === "declined"
-      ? "Recebemos sua resposta com carinho."
-      : "Presença confirmada com carinho!";
+  if (successText) {
+    successText.textContent =
+      data.status === "declined"
+        ? "Sentiremos sua falta, mas agradecemos por avisar."
+        : "Obrigado por fazer parte deste momento tão especial.";
+  }
 
-  requiredElements.successText.textContent =
-    data.status === "declined"
-      ? "Sentiremos sua falta, mas agradecemos por avisar."
-      : "Obrigado por fazer parte deste momento tão especial.";
+  if (protocol) {
+    protocol.textContent = data.protocol;
+  }
 
-  requiredElements.protocol.textContent = data.protocol;
-
-  window.scrollTo({
-    top: 0,
-    behavior: "smooth"
-  });
+  showFeedback(
+    `Resposta enviada com sucesso. Protocolo: ${data.protocol}`,
+    "success"
+  );
 }
 
 form.addEventListener("submit", async event => {
   event.preventDefault();
-  setFeedback(feedback);
+  showFeedback("");
 
   console.log("[CONFIRMAÇÃO] Formulário enviado.");
 
   try {
-    validateForm();
+    const data = buildPayload();
 
-    submitButton.disabled = true;
-    submitButton.textContent = editingDocumentId
-      ? "Atualizando..."
-      : "Enviando para o Firebase...";
+    console.log("[CONFIRMAÇÃO] Dados preparados:", {
+      ...data,
+      editToken: "[protegido]"
+    });
 
-    if (editingDocumentId) {
-      const current = await findByProtocol(
-        form.dataset.protocol || ""
-      );
+    validate(data);
 
-      if (
-        !current ||
-        current.id !== editingDocumentId ||
-        current.editToken !== requiredElements.editToken.value
-      ) {
-        throw new Error(
-          "Não foi possível validar esta edição."
-        );
-      }
-
-      const data = createPayload(
-        current.protocol,
-        current.editToken
-      );
-
-      console.log(
-        "[CONFIRMAÇÃO] Atualizando documento:",
-        editingDocumentId
-      );
-
-      await updateDoc(
-        doc(db, "rsvps", editingDocumentId),
-        data
-      );
-
-      console.log(
-        "[CONFIRMAÇÃO] Atualização concluída:",
-        editingDocumentId
-      );
-
-      showSuccess(data, true);
-      return;
+    if (submitButton) {
+      submitButton.disabled = true;
+      submitButton.textContent = "Enviando para o Firebase...";
     }
 
-    const protocol = createProtocol();
-    const editToken = crypto.randomUUID();
-
-    const data = {
-      ...createPayload(protocol, editToken),
-      createdAt: serverTimestamp()
-    };
-
     console.log(
-      "[CONFIRMAÇÃO] Enviando para:",
+      "[CONFIRMAÇÃO] Salvando em:",
       "iuna-e113d / rsvps"
-    );
-
-    console.log(
-      "[CONFIRMAÇÃO] Dados preparados:",
-      {
-        ...data,
-        editToken: "[protegido]"
-      }
     );
 
     const documentReference = await addDoc(
@@ -354,17 +213,13 @@ form.addEventListener("submit", async event => {
       documentReference.id
     );
 
-    form.dataset.protocol = protocol;
     showSuccess(data);
   } catch (error) {
-    console.error(
-      "[CONFIRMAÇÃO] Falha completa:",
-      {
-        code: error?.code,
-        message: error?.message,
-        stack: error?.stack
-      }
-    );
+    console.error("[CONFIRMAÇÃO] Erro ao salvar:", {
+      code: error?.code,
+      message: error?.message,
+      stack: error?.stack
+    });
 
     let message =
       error?.message ||
@@ -372,165 +227,53 @@ form.addEventListener("submit", async event => {
 
     if (error?.code === "permission-denied") {
       message =
-        "O Firebase bloqueou a gravação. Publique as regras que permitem create em rsvps.";
+        "O Firebase bloqueou a gravação. Verifique e publique as regras da coleção rsvps.";
     }
 
     if (error?.code === "failed-precondition") {
       message =
-        "O Firestore ainda não está pronto ou precisa de configuração no projeto iuna-e113d.";
+        "O banco Firestore ainda não foi criado ou configurado no projeto iuna-e113d.";
     }
 
     if (error?.code === "unavailable") {
       message =
-        "O Firebase está indisponível ou sem conexão. Tente novamente.";
+        "Não foi possível acessar o Firebase. Verifique sua conexão.";
     }
 
-    setFeedback(feedback, message, "error");
+    showFeedback(message, "error");
   } finally {
-    submitButton.disabled = false;
-    submitButton.textContent = editingDocumentId
-      ? "Atualizar minha resposta"
-      : "Confirmar minha resposta";
+    if (submitButton) {
+      submitButton.disabled = false;
+      submitButton.textContent = "Confirmar minha resposta";
+    }
   }
 });
 
-requiredElements.lookupForm.addEventListener(
-  "submit",
-  async event => {
-    event.preventDefault();
+const phoneInput = getElement("#phone");
 
-    const code = requiredElements.lookupCode
-      .value
-      .trim()
-      .toUpperCase();
-
-    setFeedback(requiredElements.lookupFeedback);
-
-    try {
-      if (!/^IUNA-[A-Z0-9]{6}$/.test(code)) {
-        throw new Error("Informe um protocolo válido.");
-      }
-
-      const data = await findByProtocol(code);
-
-      if (!data) {
-        throw new Error("Confirmação não encontrada.");
-      }
-
-      editingDocumentId = data.id;
-      form.dataset.protocol = data.protocol;
-
-      requiredElements.name.value = data.name || "";
-      requiredElements.phone.value = data.phone || "";
-      requiredElements.email.value = data.email || "";
-      requiredElements.people.value = data.people ?? 1;
-      requiredElements.children.value = data.children ?? 0;
-      requiredElements.companions.value =
-        data.companions || "";
-      requiredElements.relationship.value =
-        data.relationship || "";
-      requiredElements.city.value = data.city || "";
-      requiredElements.dietary.value = data.dietary || "";
-      requiredElements.message.value = data.message || "";
-      requiredElements.consent.checked = true;
-      requiredElements.editToken.value =
-        data.editToken || "";
-
-      const eventInput = form.querySelector(
-        `input[name="event"][value="${CSS.escape(
-          data.event || ""
-        )}"]`
-      );
-
-      if (eventInput) {
-        eventInput.checked = true;
-      }
-
-      toggleAttendanceDetails();
-      submitButton.textContent =
-        "Atualizar minha resposta";
-
-      setFeedback(
-        requiredElements.lookupFeedback,
-        "Confirmação encontrada.",
-        "success"
-      );
-
-      form.scrollIntoView({
-        behavior: "smooth",
-        block: "start"
-      });
-    } catch (error) {
-      console.error(
-        "[CONFIRMAÇÃO] Erro na consulta:",
-        error
-      );
-
-      setFeedback(
-        requiredElements.lookupFeedback,
-        error?.message ||
-          "Não foi possível consultar.",
-        "error"
-      );
-    }
-  }
-);
-
-requiredElements.phone.addEventListener(
-  "input",
-  event => {
-    event.target.value =
-      formatPhone(event.target.value);
-  }
-);
-
-form
-  .querySelectorAll('input[name="event"]')
-  .forEach(input => {
-    input.addEventListener(
-      "change",
-      toggleAttendanceDetails
-    );
+if (phoneInput) {
+  phoneInput.addEventListener("input", event => {
+    event.target.value = event.target.value
+      .replace(/[^\d()\s-]/g, "")
+      .slice(0, 16);
   });
+}
 
-requiredElements.copyProtocol.addEventListener(
-  "click",
-  async () => {
-    const protocol =
-      requiredElements.protocol.textContent.trim();
+const copyButton = getElement("#copyProtocol");
+
+if (copyButton) {
+  copyButton.addEventListener("click", async () => {
+    const protocol = getElement("#protocol")?.textContent.trim();
+
+    if (!protocol) return;
 
     try {
       await navigator.clipboard.writeText(protocol);
-      requiredElements.copyProtocol.textContent =
-        "Copiado!";
+      copyButton.textContent = "Copiado!";
     } catch {
-      window.prompt(
-        "Copie seu protocolo:",
-        protocol
-      );
+      window.prompt("Copie seu protocolo:", protocol);
     }
-  }
-);
-
-const eventFromUrl =
-  new URLSearchParams(window.location.search)
-    .get("evento");
-
-if (
-  ["bage", "porto-alegre", "ambos"]
-    .includes(eventFromUrl)
-) {
-  const eventInput = form.querySelector(
-    `input[name="event"][value="${eventFromUrl}"]`
-  );
-
-  if (eventInput) {
-    eventInput.checked = true;
-  }
+  });
 }
 
-toggleAttendanceDetails();
-
-console.log(
-  "[CONFIRMAÇÃO] Inicialização concluída."
-);
+console.log("[CONFIRMAÇÃO] Inicialização concluída.");
