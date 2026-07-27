@@ -5,7 +5,7 @@ import {
 
 import {
   doc,
-  getDoc
+  getDocFromServer
 } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 
 import {
@@ -13,125 +13,128 @@ import {
   db
 } from "./firebase-config.js";
 
-const logoutButton = document.querySelector("#logoutButton");
-const adminPage = document.querySelector(".admin-page");
+const LOGIN_URL = "./login.html";
+const ALLOWED_ROLES = new Set(["owner", "admin", "editor"]);
 
-if (adminPage) {
-  adminPage.style.visibility = "hidden";
-}
+function redirectToLogin(reason = "") {
+  const target = new URL(LOGIN_URL, window.location.href);
 
-async function getAuthorizedAdmin(user) {
-  const adminReference = doc(db, "admins", user.uid);
-  const adminSnapshot = await getDoc(adminReference);
-
-  if (!adminSnapshot.exists()) {
-    return null;
+  if (reason) {
+    target.searchParams.set("reason", reason);
   }
 
-  const admin = adminSnapshot.data();
+  window.location.replace(target.href);
+}
 
-  const allowedRoles = [
-    "owner",
-    "admin",
-    "editor"
-  ];
+function showFatalMessage(message) {
+  let box = document.querySelector("#adminAuthMessage");
 
-  if (
-    admin.active !== true ||
-    !allowedRoles.includes(admin.role)
-  ) {
-    return null;
+  if (!box) {
+    box = document.createElement("div");
+    box.id = "adminAuthMessage";
+    box.className = "admin-auth-message";
+    document.body.appendChild(box);
+  }
+
+  box.innerHTML = `
+    <strong>Não foi possível abrir o painel.</strong>
+    <span>${message}</span>
+  `;
+}
+
+async function validateAdministrator(user) {
+  const adminReference = doc(db, "admins", user.uid);
+  const snapshot = await getDocFromServer(adminReference);
+
+  if (!snapshot.exists()) {
+    throw new Error(
+      `Não existe o documento admins/${user.uid} no Firestore.`
+    );
+  }
+
+  const admin = snapshot.data();
+  const role = String(admin.role || "").toLowerCase();
+
+  if (admin.active !== true) {
+    throw new Error("O cadastro do administrador está inativo.");
+  }
+
+  if (!ALLOWED_ROLES.has(role)) {
+    throw new Error(
+      "O administrador precisa ter role owner, admin ou editor."
+    );
   }
 
   return {
-    id: adminSnapshot.id,
-    ...admin
+    uid: user.uid,
+    email: user.email || "",
+    ...admin,
+    role
   };
 }
 
-function updateAdminProfile(user, admin) {
-  const profileName = document.querySelector(
-    ".profile-copy strong"
+window.chaIunaAdminReady = new Promise((resolve, reject) => {
+  const unsubscribe = onAuthStateChanged(
+    auth,
+    async user => {
+      unsubscribe();
+
+      if (!user) {
+        redirectToLogin("sessao");
+        reject(new Error("Usuário não autenticado."));
+        return;
+      }
+
+      try {
+        const admin = await validateAdministrator(user);
+
+        window.chaIunaAdmin = admin;
+
+        window.dispatchEvent(
+          new CustomEvent("cha-iuna:admin-ready", {
+            detail: {
+              user,
+              admin
+            }
+          })
+        );
+
+        resolve({
+          user,
+          admin
+        });
+
+        console.log("[ADMIN AUTH] Acesso autorizado:", {
+          uid: user.uid,
+          email: user.email,
+          role: admin.role
+        });
+      } catch (error) {
+        console.error("[ADMIN AUTH] Falha na validação:", error);
+
+        showFatalMessage(
+          error?.message ||
+          "Verifique sua conexão e as permissões do Firestore."
+        );
+
+        reject(error);
+      }
+    },
+    error => {
+      console.error("[ADMIN AUTH] Erro de autenticação:", error);
+      showFatalMessage("O Firebase Authentication não respondeu.");
+      reject(error);
+    }
   );
+});
 
-  const profileRole = document.querySelector(
-    ".profile-copy small"
-  );
-
-  const profileInitials = document.querySelector(
-    ".profile-button > span:first-child"
-  );
-
-  const name =
-    admin.name ||
-    user.displayName ||
-    "Pais da Iúna";
-
-  if (profileName) {
-    profileName.textContent = name;
-  }
-
-  if (profileRole) {
-    const roleNames = {
-      owner: "Proprietários",
-      admin: "Administradores",
-      editor: "Editores"
-    };
-
-    profileRole.textContent =
-      roleNames[admin.role] ||
-      "Administradores";
-  }
-
-  if (profileInitials) {
-    profileInitials.textContent = name
-      .split(" ")
-      .filter(Boolean)
-      .slice(0, 2)
-      .map(word => word.charAt(0).toUpperCase())
-      .join("");
-  }
-}
-
-onAuthStateChanged(auth, async user => {
-  if (!user) {
-    window.location.replace("./login.html");
-    return;
-  }
-
-  try {
-    const admin = await getAuthorizedAdmin(user);
-
-    if (!admin) {
+document.querySelector("#logoutButton")?.addEventListener(
+  "click",
+  async () => {
+    try {
       await signOut(auth);
-      window.location.replace("./login.html");
-      return;
+    } finally {
+      redirectToLogin("logout");
     }
-
-    updateAdminProfile(user, admin);
-
-    if (adminPage) {
-      adminPage.style.visibility = "visible";
-    }
-  } catch (error) {
-    console.error(
-      "Erro ao validar administrador:",
-      error
-    );
-
-    await signOut(auth);
-    window.location.replace("./login.html");
   }
-});
-
-logoutButton?.addEventListener("click", async () => {
-  logoutButton.disabled = true;
-
-  try {
-    await signOut(auth);
-    window.location.replace("./login.html");
-  } catch (error) {
-    console.error("Erro ao sair:", error);
-    logoutButton.disabled = false;
-  }
-});
+);

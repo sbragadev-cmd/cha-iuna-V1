@@ -59,35 +59,7 @@ const seedData = {
     }
   ],
 
-  gifts: [
-    {
-      id: crypto.randomUUID(),
-      name: "Fraldas tamanho M",
-      category: "Fraldas",
-      price: "R$ 50 a R$ 90",
-      priority: "high",
-      status: "available",
-      link: ""
-    },
-    {
-      id: crypto.randomUUID(),
-      name: "Kit de higiene",
-      category: "Higiene",
-      price: "R$ 80 a R$ 140",
-      priority: "medium",
-      status: "reserved",
-      link: ""
-    },
-    {
-      id: crypto.randomUUID(),
-      name: "Manta para bebê",
-      category: "Quarto",
-      price: "R$ 70 a R$ 120",
-      priority: "low",
-      status: "received",
-      link: ""
-    }
-  ],
+  gifts: [],
 
   tasks: [
     {
@@ -177,9 +149,7 @@ function loadData() {
       photos: Array.isArray(parsed.photos)
         ? parsed.photos
         : [],
-      gifts: Array.isArray(parsed.gifts)
-        ? parsed.gifts
-        : [],
+      gifts: [],
       tasks: Array.isArray(parsed.tasks)
         ? parsed.tasks
         : [],
@@ -433,19 +403,11 @@ function renderDashboard() {
       ).length;
   }
 
-  if (statGifts) {
-    statGifts.textContent =
-      data.gifts.length;
-  }
+  /*
+    Os indicadores de presentes são atualizados por
+    admin-gifts-firestore.js, usando a coleção gifts.
+  */
 
-  if (statReserved) {
-    const reservedCount = data.gifts.filter(
-      gift => gift.status !== "available"
-    ).length;
-
-    statReserved.textContent =
-      `${reservedCount} reservados/recebidos`;
-  }
 
   if (statTasks) {
     statTasks.textContent =
@@ -785,115 +747,12 @@ function renderGallery() {
    PRESENTES
 ===================================================== */
 
-function renderGifts() {
-  const available = data.gifts.filter(
-    gift => gift.status === "available"
-  ).length;
-
-  const reserved = data.gifts.filter(
-    gift => gift.status === "reserved"
-  ).length;
-
-  const received = data.gifts.filter(
-    gift => gift.status === "received"
-  ).length;
-
-  const giftSummary = qs("#giftSummary");
-
-  if (giftSummary) {
-    giftSummary.innerHTML = `
-      <article class="summary-card">
-        <small>Disponíveis</small>
-        <strong>${available}</strong>
-      </article>
-
-      <article class="summary-card">
-        <small>Reservados</small>
-        <strong>${reserved}</strong>
-      </article>
-
-      <article class="summary-card">
-        <small>Recebidos</small>
-        <strong>${received}</strong>
-      </article>
-    `;
-  }
-
-  const giftTableBody = qs(
-    "#giftTableBody"
-  );
-
-  if (giftTableBody) {
-    giftTableBody.innerHTML = data.gifts
-      .map(gift => `
-        <tr>
-          <td class="person-cell">
-            <strong>
-              ${escapeHtml(gift.name)}
-            </strong>
-
-            <small>
-              ${
-                gift.link
-                  ? "Possui link"
-                  : "Sem link"
-              }
-            </small>
-          </td>
-
-          <td>
-            ${escapeHtml(gift.category)}
-          </td>
-
-          <td>
-            ${escapeHtml(
-              gift.price ||
-              "—"
-            )}
-          </td>
-
-          <td>
-            <span
-              class="priority-pill ${gift.priority}"
-            >
-              ${priorityText(gift.priority)}
-            </span>
-          </td>
-
-          <td>
-            <span
-              class="status-pill ${gift.status}"
-            >
-              ${statusText(gift.status)}
-            </span>
-          </td>
-
-          <td>
-            <div class="action-buttons">
-              <button
-                class="icon-button"
-                type="button"
-                data-cycle-gift="${gift.id}"
-                title="Alterar situação"
-              >
-                ↻
-              </button>
-
-              <button
-                class="icon-button"
-                type="button"
-                data-delete-gift="${gift.id}"
-                title="Excluir"
-              >
-                ×
-              </button>
-            </div>
-          </td>
-        </tr>
-      `)
-      .join("");
-  }
-}
+/*
+  A lista de presentes não usa mais localStorage.
+  A renderização e persistência ficam em:
+  assets/js/admin-gifts-firestore.js
+*/
+function renderGifts() {}
 
 /* =====================================================
    GESTÃO DA FESTA
@@ -1289,57 +1148,9 @@ qs("#photoForm")?.addEventListener(
    FORMULÁRIO DE PRESENTES
 ===================================================== */
 
-qs("#giftForm")?.addEventListener(
-  "submit",
-  event => {
-    event.preventDefault();
-
-    const name =
-      qs("#giftName")
-        ?.value
-        .trim() || "";
-
-    if (!name) {
-      showToast(
-        "Informe o nome do presente"
-      );
-      return;
-    }
-
-    data.gifts.push({
-      id: crypto.randomUUID(),
-
-      name,
-
-      category:
-        qs("#giftCategory")
-          ?.value || "Outros",
-
-      price:
-        qs("#giftPrice")
-          ?.value
-          .trim() || "",
-
-      priority:
-        qs("#giftPriority")
-          ?.value || "medium",
-
-      status:
-        qs("#giftStatus")
-          ?.value || "available",
-
-      link:
-        qs("#giftLink")
-          ?.value
-          .trim() || ""
-    });
-
-    event.target.reset();
-
-    closeModal(qs("#giftModal"));
-    saveData("Presente adicionado");
-  }
-);
+/*
+  Controlado exclusivamente por admin-gifts-firestore.js.
+*/
 
 /* =====================================================
    FORMULÁRIO DE TAREFAS
@@ -1615,66 +1426,6 @@ document.addEventListener(
       return;
     }
 
-    const cycleGift = event.target.closest(
-      "[data-cycle-gift]"
-    );
-
-    if (cycleGift) {
-      const order = [
-        "available",
-        "reserved",
-        "received"
-      ];
-
-      data.gifts = data.gifts.map(item => {
-        if (
-          item.id !==
-          cycleGift.dataset.cycleGift
-        ) {
-          return item;
-        }
-
-        const currentIndex =
-          order.indexOf(item.status);
-
-        const nextStatus =
-          order[
-            (currentIndex + 1) %
-            order.length
-          ];
-
-        return {
-          ...item,
-          status: nextStatus
-        };
-      });
-
-      saveData(
-        "Situação do presente atualizada"
-      );
-
-      return;
-    }
-
-    const deleteGift = event.target.closest(
-      "[data-delete-gift]"
-    );
-
-    if (
-      deleteGift &&
-      window.confirm(
-        "Excluir este presente?"
-      )
-    ) {
-      data.gifts = data.gifts.filter(
-        item =>
-          item.id !==
-          deleteGift.dataset.deleteGift
-      );
-
-      saveData("Presente excluído");
-      return;
-    }
 
     const toggleTask = event.target.closest(
       "[data-toggle-task]"

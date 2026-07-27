@@ -2,7 +2,6 @@ import {
   collection,
   deleteDoc,
   doc,
-  getDoc,
   onSnapshot,
   serverTimestamp,
   setDoc,
@@ -10,15 +9,8 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 
 import {
-  onAuthStateChanged
-} from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
-
-import {
-  auth,
   db
 } from "./firebase-config.js";
-
-const giftsCollection = collection(db, "gifts");
 
 const elements = {
   form: document.querySelector("#giftForm"),
@@ -36,27 +28,19 @@ const elements = {
 const state = {
   gifts: [],
   editingId: null,
-  unsubscribe: null,
   user: null,
   admin: null,
-  authReady: false
+  unsubscribe: null
 };
 
-function showToast(message, type = "success", duration = 4000) {
-  if (!elements.toast) {
-    console[type === "error" ? "error" : "log"](`[PRESENTES] ${message}`);
-    return;
+function normalizeInteger(value, fallback = 0) {
+  const number = Number(value);
+
+  if (!Number.isFinite(number)) {
+    return fallback;
   }
 
-  elements.toast.textContent = message;
-  elements.toast.dataset.type = type;
-  elements.toast.classList.add("show");
-
-  clearTimeout(showToast.timeout);
-
-  showToast.timeout = setTimeout(() => {
-    elements.toast.classList.remove("show");
-  }, duration);
+  return Math.max(0, Math.trunc(number));
 }
 
 function escapeHtml(value = "") {
@@ -68,145 +52,59 @@ function escapeHtml(value = "") {
     .replaceAll("'", "&#039;");
 }
 
-function normalizeInteger(value, fallback = 0) {
-  const parsed = Number(value);
-
-  if (!Number.isFinite(parsed)) {
-    return fallback;
-  }
-
-  return Math.max(0, Math.trunc(parsed));
-}
-
 function getTotal(gift) {
-  return normalizeInteger(
-    gift.totalQuantity ??
-    gift.quantity ??
-    gift.targetQuantity,
-    0
-  );
+  return normalizeInteger(gift.totalQuantity, 0);
 }
 
 function getReserved(gift) {
-  return normalizeInteger(
-    gift.reservedQuantity ??
-    gift.selectedQuantity,
-    0
-  );
+  return normalizeInteger(gift.reservedQuantity, 0);
 }
 
 function getAvailable(gift) {
-  if (gift.availableQuantity !== undefined) {
-    return normalizeInteger(gift.availableQuantity, 0);
-  }
-
-  return Math.max(0, getTotal(gift) - getReserved(gift));
+  return normalizeInteger(
+    gift.availableQuantity,
+    Math.max(0, getTotal(gift) - getReserved(gift))
+  );
 }
 
-function formatFirebaseError(error) {
-  const code = error?.code || "";
-  const message = error?.message || "";
-
-  if (code.includes("permission-denied")) {
-    return "Permissão negada pelo Firestore. Verifique se existe o documento admins/" +
-      (state.user?.uid || "UID_DO_USUARIO") +
-      " com active: true e role: owner, admin ou editor.";
-  }
-
-  if (code.includes("unauthenticated")) {
-    return "Sua sessão não está autenticada. Saia do painel e entre novamente.";
-  }
-
-  if (code.includes("unavailable")) {
-    return "O Firebase está temporariamente indisponível. Verifique sua internet.";
-  }
-
-  return message || "Não foi possível concluir a operação no Firebase.";
-}
-
-async function loadAdminProfile(user) {
-  if (!user) {
-    state.admin = null;
-    return null;
-  }
-
-  const adminReference = doc(db, "admins", user.uid);
-  const adminSnapshot = await getDoc(adminReference);
-
-  if (!adminSnapshot.exists()) {
-    state.admin = null;
-    return null;
-  }
-
-  state.admin = {
-    id: adminSnapshot.id,
-    ...adminSnapshot.data()
-  };
-
-  return state.admin;
-}
-
-function isAuthorizedAdmin() {
-  if (!state.user || !state.admin) {
-    return false;
-  }
-
-  const role = String(state.admin.role || "").toLowerCase();
-
-  return state.admin.active === true &&
-    ["owner", "admin", "editor"].includes(role);
-}
-
-function requireAdmin() {
-  if (!state.authReady) {
-    showToast("Aguarde a autenticação do painel.", "error");
-    return false;
-  }
-
-  if (!state.user) {
-    showToast("Sua sessão expirou. Entre novamente no painel.", "error");
-    return false;
-  }
-
-  if (!state.admin) {
-    showToast(
-      `O usuário está autenticado, mas não existe admins/${state.user.uid} no Firestore.`,
-      "error",
-      8000
-    );
-    return false;
-  }
-
-  if (!isAuthorizedAdmin()) {
-    showToast(
-      "O cadastro do administrador precisa ter active: true e role: owner, admin ou editor.",
-      "error",
-      8000
-    );
-    return false;
-  }
-
-  return true;
-}
-
-function injectAdminInterface() {
-  if (!elements.form) {
-    console.error("[PRESENTES] Formulário #giftForm não encontrado.");
+function showToast(message, type = "success", duration = 4000) {
+  if (!elements.toast) {
+    console[type === "error" ? "error" : "log"](message);
     return;
   }
 
-  if (elements.tableHead) {
-    elements.tableHead.innerHTML = `
-      <tr>
-        <th>Presente</th>
-        <th>Categoria</th>
-        <th>Total</th>
-        <th>Disponíveis</th>
-        <th>Escolhidos</th>
-        <th>Exibição</th>
-        <th>Ações</th>
-      </tr>
-    `;
+  elements.toast.textContent = message;
+  elements.toast.dataset.type = type;
+  elements.toast.classList.add("show");
+
+  clearTimeout(showToast.timer);
+
+  showToast.timer = setTimeout(() => {
+    elements.toast.classList.remove("show");
+  }, duration);
+}
+
+function explainFirebaseError(error) {
+  console.error("[ADMIN PRESENTES] Erro Firebase:", error);
+
+  if (error?.code === "permission-denied") {
+    return "O Firestore negou a gravação. Confira o documento do administrador e as regras.";
+  }
+
+  if (error?.code === "unavailable") {
+    return "O Firebase está indisponível ou sem conexão neste momento.";
+  }
+
+  if (String(error?.message || "").includes("offline")) {
+    return "O navegador não conseguiu conectar ao Firestore. Atualize a página e confira a internet.";
+  }
+
+  return error?.message || "Não foi possível concluir a operação.";
+}
+
+function injectGiftForm() {
+  if (!elements.form) {
+    throw new Error("O formulário #giftForm não foi encontrado.");
   }
 
   elements.form.innerHTML = `
@@ -214,7 +112,7 @@ function injectAdminInterface() {
 
     <label>
       <span>Nome do presente</span>
-      <input id="giftName" type="text" maxlength="100" required
+      <input id="giftName" maxlength="100" required
         placeholder="Ex.: Fralda tamanho M">
     </label>
 
@@ -240,9 +138,9 @@ function injectAdminInterface() {
     </div>
 
     <label>
-      <span>Descrição opcional</span>
+      <span>Descrição</span>
       <textarea id="giftDescription" rows="3" maxlength="300"
-        placeholder="Ex.: Preferência por fraldas sem perfume."></textarea>
+        placeholder="Detalhes ou preferência da família"></textarea>
     </label>
 
     <div class="form-grid">
@@ -254,20 +152,20 @@ function injectAdminInterface() {
       <label>
         <span>Ordem na lista</span>
         <input id="giftOrder" type="number"
-          min="0" max="9999" step="1" value="0">
+          min="0" max="9999" value="0">
       </label>
     </div>
 
     <label class="check-field">
       <input id="giftActive" type="checkbox" checked>
-      <span>Exibir este item na lista pública</span>
+      <span>Exibir na lista pública</span>
     </label>
 
     <div class="admin-gift-privacy-note">
-      <strong>Privacidade das reservas</strong>
+      <strong>Reserva anônima</strong>
       <p>
-        O sistema controla somente as quantidades.
-        Nenhum nome de convidado será registrado.
+        O painel mostra apenas os saldos. Nenhum nome de convidado
+        será gravado para os presentes.
       </p>
     </div>
 
@@ -284,58 +182,73 @@ function injectAdminInterface() {
 
   elements.form
     .querySelector(".modal-cancel")
-    ?.addEventListener("click", closeGiftModal);
+    ?.addEventListener("click", closeModal);
 }
 
-function openGiftModal(gift = null) {
-  if (!requireAdmin() || !elements.modal || !elements.form) {
+function configureTable() {
+  if (!elements.tableHead) {
     return;
   }
 
+  elements.tableHead.innerHTML = `
+    <tr>
+      <th>Presente</th>
+      <th>Categoria</th>
+      <th>Total</th>
+      <th>Disponíveis</th>
+      <th>Escolhidos</th>
+      <th>Exibição</th>
+      <th>Ações</th>
+    </tr>
+  `;
+}
+
+function openModal(gift = null) {
   state.editingId = gift?.id || null;
   elements.form.reset();
 
   document.querySelector("#giftId").value = gift?.id || "";
   document.querySelector("#giftName").value = gift?.name || "";
-  document.querySelector("#giftCategory").value = gift?.category || "Fraldas";
-  document.querySelector("#giftDescription").value = gift?.description || "";
+  document.querySelector("#giftCategory").value =
+    gift?.category || "Fraldas";
+  document.querySelector("#giftDescription").value =
+    gift?.description || "";
   document.querySelector("#giftImageUrl").value =
-    gift?.imageUrl || gift?.imageData || "";
+    gift?.imageUrl || "";
   document.querySelector("#giftOrder").value =
     normalizeInteger(gift?.order, 0);
-  document.querySelector("#giftActive").checked =
-    gift?.active !== false;
   document.querySelector("#giftTotalQuantity").value =
     gift ? Math.max(1, getTotal(gift)) : 1;
+  document.querySelector("#giftActive").checked =
+    gift?.active !== false;
 
   if (elements.modalTitle) {
-    elements.modalTitle.textContent = gift
-      ? "Editar presente"
-      : "Novo presente";
+    elements.modalTitle.textContent =
+      gift ? "Editar presente" : "Novo presente";
   }
 
   elements.modal.classList.add("open");
   elements.modal.setAttribute("aria-hidden", "false");
 }
 
-function closeGiftModal() {
+function closeModal() {
   elements.modal?.classList.remove("open");
   elements.modal?.setAttribute("aria-hidden", "true");
   state.editingId = null;
 }
 
 function render() {
-  const totalItems = state.gifts.reduce(
+  const totalUnits = state.gifts.reduce(
     (sum, gift) => sum + getTotal(gift),
     0
   );
 
-  const availableItems = state.gifts.reduce(
+  const availableUnits = state.gifts.reduce(
     (sum, gift) => sum + getAvailable(gift),
     0
   );
 
-  const reservedItems = state.gifts.reduce(
+  const reservedUnits = state.gifts.reduce(
     (sum, gift) => sum + getReserved(gift),
     0
   );
@@ -349,17 +262,17 @@ function render() {
 
       <article class="summary-card">
         <small>Unidades desejadas</small>
-        <strong>${totalItems}</strong>
+        <strong>${totalUnits}</strong>
       </article>
 
       <article class="summary-card">
         <small>Unidades disponíveis</small>
-        <strong>${availableItems}</strong>
+        <strong>${availableUnits}</strong>
       </article>
 
       <article class="summary-card">
         <small>Unidades escolhidas</small>
-        <strong>${reservedItems}</strong>
+        <strong>${reservedUnits}</strong>
       </article>
     `;
   }
@@ -370,7 +283,7 @@ function render() {
 
   if (elements.statReserved) {
     elements.statReserved.textContent =
-      `${reservedItems} unidades escolhidas`;
+      `${reservedUnits} unidades escolhidas`;
   }
 
   if (!elements.tableBody) {
@@ -382,7 +295,7 @@ function render() {
       <tr>
         <td colspan="7">
           <div class="empty-state">
-            Nenhum presente cadastrado no Firestore.
+            Nenhum presente cadastrado no Firebase.
           </div>
         </td>
       </tr>
@@ -390,57 +303,52 @@ function render() {
     return;
   }
 
-  elements.tableBody.innerHTML = state.gifts.map(gift => {
-    const total = getTotal(gift);
-    const available = getAvailable(gift);
-    const reserved = getReserved(gift);
-    const visible = gift.active !== false;
+  elements.tableBody.innerHTML = state.gifts
+    .map(gift => {
+      const visible = gift.active !== false;
 
-    return `
-      <tr>
-        <td class="person-cell">
-          <strong>${escapeHtml(gift.name || "Sem nome")}</strong>
-          <small>${escapeHtml(gift.description || "Sem descrição")}</small>
-        </td>
+      return `
+        <tr>
+          <td class="person-cell">
+            <strong>${escapeHtml(gift.name || "Sem nome")}</strong>
+            <small>${escapeHtml(gift.description || "Sem descrição")}</small>
+          </td>
 
-        <td>${escapeHtml(gift.category || "Outro")}</td>
-        <td><strong>${total}</strong></td>
-        <td><strong>${available}</strong></td>
-        <td><strong>${reserved}</strong></td>
+          <td>${escapeHtml(gift.category || "Outro")}</td>
+          <td><strong>${getTotal(gift)}</strong></td>
+          <td><strong>${getAvailable(gift)}</strong></td>
+          <td><strong>${getReserved(gift)}</strong></td>
 
-        <td>
-          <span class="status-pill ${visible ? "available" : "pending"}">
-            ${visible ? "Visível" : "Oculto"}
-          </span>
-        </td>
+          <td>
+            <span class="status-pill ${visible ? "available" : "pending"}">
+              ${visible ? "Visível" : "Oculto"}
+            </span>
+          </td>
 
-        <td>
-          <div class="action-buttons">
-            <button class="icon-button" type="button"
-              data-admin-edit-gift="${gift.id}" title="Editar">✎</button>
+          <td>
+            <div class="action-buttons">
+              <button class="icon-button" type="button"
+                data-firebase-edit-gift="${gift.id}" title="Editar">✎</button>
 
-            <button class="icon-button" type="button"
-              data-admin-toggle-gift="${gift.id}"
-              title="${visible ? "Ocultar" : "Exibir"}">
-              ${visible ? "◉" : "○"}
-            </button>
+              <button class="icon-button" type="button"
+                data-firebase-toggle-gift="${gift.id}"
+                title="${visible ? "Ocultar" : "Exibir"}">
+                ${visible ? "◉" : "○"}
+              </button>
 
-            <button class="icon-button" type="button"
-              data-admin-delete-gift="${gift.id}" title="Excluir">×</button>
-          </div>
-        </td>
-      </tr>
-    `;
-  }).join("");
+              <button class="icon-button" type="button"
+                data-firebase-delete-gift="${gift.id}" title="Excluir">×</button>
+            </div>
+          </td>
+        </tr>
+      `;
+    })
+    .join("");
 }
 
 async function saveGift(event) {
   event.preventDefault();
   event.stopImmediatePropagation();
-
-  if (!requireAdmin()) {
-    return;
-  }
 
   const name = document.querySelector("#giftName")?.value.trim() || "";
   const totalQuantity = normalizeInteger(
@@ -448,7 +356,7 @@ async function saveGift(event) {
     0
   );
 
-  if (name.length < 2) {
+  if (!name) {
     showToast("Informe o nome do presente.", "error");
     return;
   }
@@ -458,21 +366,25 @@ async function saveGift(event) {
     return;
   }
 
-  const currentGift = state.gifts.find(
+  const oldGift = state.gifts.find(
     gift => gift.id === state.editingId
   );
 
-  const reservedQuantity = currentGift
-    ? getReserved(currentGift)
+  const reservedQuantity = oldGift
+    ? getReserved(oldGift)
     : 0;
 
   if (totalQuantity < reservedQuantity) {
     showToast(
       `O total não pode ser menor que ${reservedQuantity}, pois essas unidades já foram escolhidas.`,
-      "error"
+      "error",
+      7000
     );
     return;
   }
+
+  const active =
+    document.querySelector("#giftActive")?.checked ?? true;
 
   const payload = {
     name,
@@ -486,25 +398,18 @@ async function saveGift(event) {
       document.querySelector("#giftOrder")?.value,
       0
     ),
-    active:
-      document.querySelector("#giftActive")?.checked ?? true,
     totalQuantity,
-    availableQuantity: totalQuantity - reservedQuantity,
     reservedQuantity,
-    status:
-      (document.querySelector("#giftActive")?.checked ?? true)
-        ? "available"
-        : "hidden",
+    availableQuantity: totalQuantity - reservedQuantity,
+    active,
+    status: active ? "available" : "hidden",
     updatedAt: serverTimestamp(),
     updatedBy: state.user.uid
   };
 
-  const submitButton = elements.form.querySelector(
-    'button[type="submit"]'
-  );
-
-  submitButton.disabled = true;
-  submitButton.textContent = "Salvando...";
+  const submit = elements.form.querySelector('[type="submit"]');
+  submit.disabled = true;
+  submit.textContent = "Salvando...";
 
   try {
     if (state.editingId) {
@@ -513,11 +418,11 @@ async function saveGift(event) {
         payload
       );
 
-      showToast("Presente atualizado.");
+      showToast("Presente atualizado no Firebase.");
     } else {
-      const newGiftReference = doc(giftsCollection);
+      const reference = doc(collection(db, "gifts"));
 
-      await setDoc(newGiftReference, {
+      await setDoc(reference, {
         ...payload,
         createdAt: serverTimestamp(),
         createdBy: state.user.uid
@@ -526,54 +431,37 @@ async function saveGift(event) {
       showToast("Presente criado no Firebase.");
     }
 
-    closeGiftModal();
+    closeModal();
   } catch (error) {
-    console.error("[ADMIN PRESENTES] Falha ao salvar:", {
-      code: error?.code,
-      message: error?.message,
-      error
-    });
-
-    showToast(formatFirebaseError(error), "error", 10000);
+    showToast(explainFirebaseError(error), "error", 9000);
   } finally {
-    submitButton.disabled = false;
-    submitButton.textContent = "Salvar presente";
+    submit.disabled = false;
+    submit.textContent = "Salvar presente";
   }
 }
 
 async function toggleGift(id) {
-  if (!requireAdmin()) {
-    return;
-  }
-
   const gift = state.gifts.find(item => item.id === id);
 
   if (!gift) {
     return;
   }
 
-  try {
-    const active = gift.active === false;
+  const active = gift.active === false;
 
+  try {
     await updateDoc(doc(db, "gifts", id), {
       active,
       status: active ? "available" : "hidden",
       updatedAt: serverTimestamp(),
       updatedBy: state.user.uid
     });
-
-    showToast(active ? "Presente exibido." : "Presente ocultado.");
   } catch (error) {
-    console.error(error);
-    showToast(formatFirebaseError(error), "error", 10000);
+    showToast(explainFirebaseError(error), "error", 9000);
   }
 }
 
-async function removeGift(id) {
-  if (!requireAdmin()) {
-    return;
-  }
-
+async function deleteGift(id) {
   const gift = state.gifts.find(item => item.id === id);
 
   if (!gift || !confirm(`Excluir “${gift.name}”?`)) {
@@ -584,127 +472,115 @@ async function removeGift(id) {
     await deleteDoc(doc(db, "gifts", id));
     showToast("Presente excluído.");
   } catch (error) {
-    console.error(error);
-    showToast(formatFirebaseError(error), "error", 10000);
+    showToast(explainFirebaseError(error), "error", 9000);
   }
 }
 
-function startSync() {
+function startRealtimeSync() {
   state.unsubscribe?.();
 
   state.unsubscribe = onSnapshot(
-    giftsCollection,
+    collection(db, "gifts"),
     snapshot => {
-      state.gifts = snapshot.docs.map(item => ({
-        id: item.id,
-        ...item.data()
-      })).sort((a, b) => {
-        const orderDifference =
-          normalizeInteger(a.order, 0) -
-          normalizeInteger(b.order, 0);
+      state.gifts = snapshot.docs
+        .map(item => ({
+          id: item.id,
+          ...item.data()
+        }))
+        .sort((a, b) => {
+          const difference =
+            normalizeInteger(a.order, 0) -
+            normalizeInteger(b.order, 0);
 
-        return orderDifference ||
-          String(a.name || "").localeCompare(
-            String(b.name || ""),
-            "pt-BR"
-          );
-      });
+          return difference ||
+            String(a.name || "").localeCompare(
+              String(b.name || ""),
+              "pt-BR"
+            );
+        });
 
       render();
     },
     error => {
-      console.error("[ADMIN PRESENTES] Falha na leitura:", error);
-      showToast(formatFirebaseError(error), "error", 10000);
+      showToast(explainFirebaseError(error), "error", 9000);
     }
   );
 }
 
-elements.form?.addEventListener("submit", saveGift, true);
+async function initialize() {
+  try {
+    const session = await window.chaIunaAdminReady;
 
-elements.openButton?.addEventListener("click", event => {
-  event.preventDefault();
-  event.stopImmediatePropagation();
-  openGiftModal();
-}, true);
+    state.user = session.user;
+    state.admin = session.admin;
 
-document.addEventListener("click", event => {
-  const editButton = event.target.closest("[data-admin-edit-gift]");
-  const toggleButton = event.target.closest("[data-admin-toggle-gift]");
-  const deleteButton = event.target.closest("[data-admin-delete-gift]");
+    injectGiftForm();
+    configureTable();
+    startRealtimeSync();
 
-  if (editButton) {
-    event.preventDefault();
-    event.stopImmediatePropagation();
+    elements.form?.addEventListener("submit", saveGift, true);
 
-    const gift = state.gifts.find(
-      item => item.id === editButton.dataset.adminEditGift
+    elements.openButton?.addEventListener(
+      "click",
+      event => {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        openModal();
+      },
+      true
     );
 
-    if (gift) {
-      openGiftModal(gift);
-    }
+    document.addEventListener(
+      "click",
+      event => {
+        const edit = event.target.closest(
+          "[data-firebase-edit-gift]"
+        );
 
-    return;
-  }
+        const toggle = event.target.closest(
+          "[data-firebase-toggle-gift]"
+        );
 
-  if (toggleButton) {
-    event.preventDefault();
-    event.stopImmediatePropagation();
-    toggleGift(toggleButton.dataset.adminToggleGift);
-    return;
-  }
+        const remove = event.target.closest(
+          "[data-firebase-delete-gift]"
+        );
 
-  if (deleteButton) {
-    event.preventDefault();
-    event.stopImmediatePropagation();
-    removeGift(deleteButton.dataset.adminDeleteGift);
-  }
-}, true);
+        if (edit) {
+          event.preventDefault();
+          event.stopImmediatePropagation();
 
-injectAdminInterface();
+          const gift = state.gifts.find(
+            item => item.id === edit.dataset.firebaseEditGift
+          );
 
-onAuthStateChanged(auth, async user => {
-  state.authReady = true;
-  state.user = user;
-  state.admin = null;
+          if (gift) {
+            openModal(gift);
+          }
 
-  if (!user) {
-    showToast("Usuário não autenticado.", "error", 8000);
-    return;
-  }
+          return;
+        }
 
-  try {
-    await loadAdminProfile(user);
+        if (toggle) {
+          event.preventDefault();
+          event.stopImmediatePropagation();
+          toggleGift(toggle.dataset.firebaseToggleGift);
+          return;
+        }
 
-    if (!state.admin) {
-      showToast(
-        `Crie o documento admins/${user.uid} no Firestore para liberar o painel.`,
-        "error",
-        12000
-      );
-      return;
-    }
-
-    if (!isAuthorizedAdmin()) {
-      showToast(
-        "Administrador sem permissão ativa. Use active: true e role: owner.",
-        "error",
-        12000
-      );
-      return;
-    }
-
-    console.log("[ADMIN PRESENTES] Administrador autorizado:", {
-      uid: user.uid,
-      role: state.admin.role
-    });
-
-    startSync();
+        if (remove) {
+          event.preventDefault();
+          event.stopImmediatePropagation();
+          deleteGift(remove.dataset.firebaseDeleteGift);
+        }
+      },
+      true
+    );
   } catch (error) {
-    console.error("[ADMIN PRESENTES] Erro ao validar administrador:", error);
-    showToast(formatFirebaseError(error), "error", 10000);
+    console.error("[ADMIN PRESENTES] Inicialização cancelada:", error);
   }
-});
+}
+
+initialize();
 
 window.addEventListener("beforeunload", () => {
   state.unsubscribe?.();

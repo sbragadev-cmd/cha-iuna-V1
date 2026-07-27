@@ -1,14 +1,6 @@
-/* =====================================================
-   PRESENTES — PAINEL ADMINISTRATIVO
-===================================================== */
-
+/* Presentes no painel */
 #view-gifts .gift-summary {
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-}
-
-#view-gifts table th,
-#view-gifts table td {
-  vertical-align: middle;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 #view-gifts table td:nth-child(3),
@@ -26,23 +18,32 @@
 
 .admin-gift-privacy-note strong {
   display: block;
-  margin-bottom: 0.25rem;
-  color: var(--purple, #76549b);
+  margin-bottom: 0.3rem;
+  color: #76549b;
 }
 
 .admin-gift-privacy-note p {
   margin: 0;
-  color: var(--text-soft, #666);
-  line-height: 1.55;
+  line-height: 1.5;
 }
 
-@media (max-width: 1100px) {
-  #view-gifts .gift-summary {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
+.admin-auth-message {
+  position: fixed;
+  inset: 1rem 1rem auto;
+  z-index: 99999;
+  display: grid;
+  gap: 0.25rem;
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 1rem 1.2rem;
+  border: 1px solid #f0b5b5;
+  border-radius: 16px;
+  background: #fff3f3;
+  color: #7a2020;
+  box-shadow: 0 18px 50px rgba(50, 20, 20, 0.15);
 }
 
-@media (max-width: 720px) {
+@media (max-width: 850px) {
   #view-gifts .gift-summary {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
