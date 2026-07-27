@@ -4,22 +4,23 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Teste Firebase Iúna</title>
+
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #f7f3fb;
-      color: #2f2440;
       margin: 0;
-      padding: 40px 20px;
+      padding: 32px 16px;
+      background: #f6f1fb;
+      color: #2f2440;
     }
 
     .card {
-      max-width: 620px;
+      max-width: 640px;
       margin: 0 auto;
       background: #fff;
-      border-radius: 18px;
       padding: 28px;
-      box-shadow: 0 12px 35px rgba(0,0,0,.08);
+      border-radius: 18px;
+      box-shadow: 0 12px 36px rgba(0, 0, 0, .08);
     }
 
     h1 {
@@ -28,24 +29,29 @@
 
     button {
       width: 100%;
+      padding: 16px;
       border: 0;
       border-radius: 12px;
-      padding: 16px;
+      background: #75569f;
+      color: #fff;
       font-size: 16px;
       font-weight: bold;
       cursor: pointer;
-      background: #7b5aa6;
-      color: white;
     }
 
-    pre {
-      white-space: pre-wrap;
-      word-break: break-word;
-      background: #f1edf6;
+    button:disabled {
+      opacity: .65;
+      cursor: wait;
+    }
+
+    #resultado {
+      margin-top: 20px;
+      min-height: 120px;
       padding: 16px;
       border-radius: 12px;
-      margin-top: 20px;
-      min-height: 90px;
+      background: #f1edf6;
+      white-space: pre-wrap;
+      word-break: break-word;
     }
 
     .ok {
@@ -57,32 +63,42 @@
     }
   </style>
 </head>
+
 <body>
   <main class="card">
     <h1>Teste direto do Firebase</h1>
+
     <p>
-      Clique no botão abaixo. Esta página tentará criar um documento
-      na coleção <strong>teste_conexao</strong>.
+      Esta versão funciona sem módulos e pode ser aberta diretamente
+      com duplo clique.
     </p>
 
-    <button id="testarFirebase">
+    <button id="testar">
       Testar gravação no Firestore
     </button>
 
-    <pre id="resultado">Aguardando teste...</pre>
+    <div id="resultado">Carregando Firebase...</div>
   </main>
 
-  <script type="module">
-    import {
-      initializeApp
-    } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
+  <script src="https://www.gstatic.com/firebasejs/12.2.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore-compat.js"></script>
 
-    import {
-      addDoc,
-      collection,
-      getFirestore,
-      serverTimestamp
-    } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+  <script>
+    const resultado = document.getElementById("resultado");
+    const botao = document.getElementById("testar");
+
+    function escrever(texto, classe = "") {
+      resultado.textContent = texto;
+      resultado.className = classe;
+    }
+
+    window.addEventListener("error", function (event) {
+      escrever(
+        "ERRO DE JAVASCRIPT:\n\n" +
+        (event.message || "Erro desconhecido"),
+        "erro"
+      );
+    });
 
     const firebaseConfig = {
       apiKey: "AIzaSyDwn2pB-P8Vb-Z-qPGrpu7p01NTmxpa7Xs",
@@ -93,82 +109,70 @@
       appId: "1:611255762922:web:be70b6fd48bff0c4db3c93"
     };
 
-    const resultado = document.querySelector("#resultado");
-    const botao = document.querySelector("#testarFirebase");
-
-    function escrever(texto, tipo = "") {
-      resultado.textContent = texto;
-      resultado.className = tipo;
-    }
-
-    let db;
+    let db = null;
 
     try {
-      const app = initializeApp(firebaseConfig);
-      db = getFirestore(app);
+      if (!window.firebase) {
+        throw new Error(
+          "A biblioteca do Firebase não carregou. Verifique a internet."
+        );
+      }
+
+      firebase.initializeApp(firebaseConfig);
+      db = firebase.firestore();
 
       escrever(
-        "Firebase inicializado com sucesso.\n" +
-        "Projeto: " + app.options.projectId + "\n" +
+        "Firebase carregado com sucesso.\n" +
+        "Projeto: iuna-e113d\n\n" +
         "Clique no botão para testar a gravação."
       );
-
-      console.log("[TESTE FIREBASE] Inicializado:", app.options.projectId);
     } catch (erro) {
       escrever(
         "ERRO AO INICIALIZAR:\n\n" +
-        (erro?.code || "") + "\n" +
-        (erro?.message || erro),
+        (erro.code || "") + "\n" +
+        (erro.message || erro),
         "erro"
       );
-
-      console.error("[TESTE FIREBASE] Erro de inicialização:", erro);
     }
 
-    botao.addEventListener("click", async () => {
+    botao.addEventListener("click", async function () {
       botao.disabled = true;
       botao.textContent = "Gravando...";
 
       escrever(
-        "Tentando gravar em:\n" +
+        "Tentando gravar no Firestore...\n\n" +
         "Projeto: iuna-e113d\n" +
         "Coleção: teste_conexao"
       );
 
       try {
-        const referencia = await addDoc(
-          collection(db, "teste_conexao"),
-          {
-            mensagem: "Teste de gravação do site da Iúna",
-            origem: "pagina-teste-direto",
-            criadoEm: serverTimestamp(),
+        if (!db) {
+          throw new Error("Firestore não foi inicializado.");
+        }
+
+        const referencia = await db
+          .collection("teste_conexao")
+          .add({
+            mensagem: "Teste direto do site da Iúna",
+            origem: "arquivo-sem-modulo",
+            criadoEm: firebase.firestore.FieldValue.serverTimestamp(),
             navegador: navigator.userAgent
-          }
-        );
+          });
 
         escrever(
           "SUCESSO!\n\n" +
-          "Documento gravado no Firestore.\n" +
+          "Documento criado no Firestore.\n" +
           "Coleção: teste_conexao\n" +
           "ID: " + referencia.id,
           "ok"
         );
-
-        console.log(
-          "[TESTE FIREBASE] Documento salvo:",
-          referencia.id
-        );
       } catch (erro) {
         escrever(
           "ERRO AO GRAVAR:\n\n" +
-          "Código: " + (erro?.code || "sem código") + "\n" +
-          "Mensagem: " + (erro?.message || erro) + "\n\n" +
-          "Copie exatamente este erro e envie."
-          ,
+          "Código: " + (erro.code || "sem código") + "\n" +
+          "Mensagem: " + (erro.message || erro),
           "erro"
         );
-
-        console.error("[TESTE FIREBASE] Erro ao gravar:", erro);
       } finally {
         botao.disabled = false;
         botao.textContent = "Testar novamente";
