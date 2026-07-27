@@ -1,344 +1,305 @@
+import { auth, db } from "./firebase-config.js";
+
 import {
   browserLocalPersistence,
   browserSessionPersistence,
   onAuthStateChanged,
   sendPasswordResetEmail,
   setPersistence,
-  signInWithEmailAndPassword
+  signInWithEmailAndPassword,
+  signOut
 } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
 
 import {
-  auth
-} from "./firebase-config.js";
+  doc,
+  getDoc
+} from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 
-const loginForm = document.querySelector("#loginForm");
+const form = document.querySelector("#loginForm");
 const emailInput = document.querySelector("#email");
 const passwordInput = document.querySelector("#password");
-const rememberInput = document.querySelector("#remember");
+const rememberInput = document.querySelector("#rememberMe");
+const passwordToggle = document.querySelector("#passwordToggle");
 const feedback = document.querySelector("#loginFeedback");
-const togglePassword = document.querySelector("#togglePassword");
-const forgotPasswordButton = document.querySelector("#forgotPassword");
-const submitButton = loginForm?.querySelector('button[type="submit"]');
 
-let authChecked = false;
+const forgotPasswordButton = document.querySelector("#forgotPasswordButton");
+const resetDialog = document.querySelector("#resetDialog");
+const resetForm = document.querySelector("#resetForm");
+const resetEmailInput = document.querySelector("#resetEmail");
+const resetFeedback = document.querySelector("#resetFeedback");
+const closeResetDialog = document.querySelector("#closeResetDialog");
 
-/* =====================================================
-   MENSAGENS
-===================================================== */
+let checkingInitialSession = true;
 
-function showFeedback(message, type = "error") {
-  if (!feedback) {
-    return;
-  }
-
-  feedback.textContent = message;
-  feedback.dataset.type = type;
-
-  const colors = {
-    error: "#b83f4b",
-    success: "#34785c",
-    info: "#76549b"
-  };
-
-  feedback.style.color =
-    colors[type] || colors.error;
+function normalizeText(value = "") {
+  return String(value).trim();
 }
 
-function clearFeedback() {
-  if (!feedback) {
-    return;
+function setFieldError(fieldId, message = "") {
+  const field = document.querySelector(`#${fieldId}`);
+  const error = document.querySelector(`#${fieldId}Error`);
+
+  if (field) {
+    field.setAttribute("aria-invalid", message ? "true" : "false");
   }
 
+  if (error) {
+    error.textContent = message;
+  }
+}
+
+function clearLoginErrors() {
+  setFieldError("email", "");
+  setFieldError("password", "");
   feedback.textContent = "";
-  feedback.removeAttribute("data-type");
+  feedback.className = "form-feedback";
 }
 
-/* =====================================================
-   CARREGAMENTO
-===================================================== */
-
-function setLoading(loading) {
-  if (submitButton) {
-    submitButton.disabled = loading;
-
-    const buttonText =
-      submitButton.querySelector("span");
-
-    if (buttonText) {
-      buttonText.textContent = loading
-        ? "Entrando..."
-        : "Entrar no painel";
-    }
-  }
-
-  if (emailInput) {
-    emailInput.disabled = loading;
-  }
-
-  if (passwordInput) {
-    passwordInput.disabled = loading;
-  }
-
-  if (rememberInput) {
-    rememberInput.disabled = loading;
-  }
+function clearResetErrors() {
+  setFieldError("resetEmail", "");
+  resetFeedback.textContent = "";
+  resetFeedback.className = "form-feedback";
 }
 
-/* =====================================================
-   ERROS AMIGÁVEIS
-===================================================== */
+function isValidEmail(value) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
 
-function getFriendlyError(error) {
-  const code =
-    error?.code ||
-    error?.message ||
-    "";
+function getRedirectTarget() {
+  const params = new URLSearchParams(window.location.search);
+  const redirect = params.get("redirect");
 
-  const errors = {
-    "auth/invalid-credential":
-      "E-mail ou senha incorretos.",
+  if (redirect === "admin") {
+    return "./admin.html";
+  }
 
-    "auth/user-not-found":
-      "Usuário não encontrado.",
+  return "./admin.html";
+}
 
-    "auth/wrong-password":
-      "E-mail ou senha incorretos.",
-
-    "auth/invalid-email":
-      "Digite um endereço de e-mail válido.",
-
-    "auth/missing-email":
-      "Digite seu e-mail.",
-
-    "auth/missing-password":
-      "Digite sua senha.",
-
-    "auth/user-disabled":
-      "Este usuário está desativado.",
-
+function translateAuthError(error) {
+  const messages = {
+    "auth/invalid-credential": "E-mail ou senha incorretos.",
+    "auth/user-not-found": "E-mail ou senha incorretos.",
+    "auth/wrong-password": "E-mail ou senha incorretos.",
+    "auth/invalid-email": "Informe um endereço de e-mail válido.",
+    "auth/user-disabled": "Este usuário está desativado.",
     "auth/too-many-requests":
       "Muitas tentativas foram realizadas. Aguarde alguns minutos.",
-
     "auth/network-request-failed":
-      "Não foi possível conectar ao Firebase. Verifique sua internet.",
-
-    "auth/operation-not-allowed":
-      "O acesso por e-mail e senha ainda não está ativado no Firebase.",
-
-    "auth/unauthorized-domain":
-      "Este domínio ainda não foi autorizado no Firebase."
+      "Não foi possível conectar. Verifique sua internet.",
+    "auth/missing-password": "Digite sua senha.",
+    "auth/weak-password": "A senha informada é muito curta."
   };
 
   return (
-    errors[code] ||
-    "Não foi possível entrar. Verifique os dados e tente novamente."
+    messages[error?.code] ||
+    "Não foi possível entrar agora. Tente novamente em instantes."
   );
 }
 
-/* =====================================================
-   MOSTRAR SENHA
-===================================================== */
+async function validateAdminUser(user) {
+  const snapshot = await getDoc(doc(db, "admins", user.uid));
 
-togglePassword?.addEventListener(
-  "click",
-  () => {
-    const isPassword =
-      passwordInput.type === "password";
-
-    passwordInput.type =
-      isPassword
-        ? "text"
-        : "password";
-
-    togglePassword.textContent =
-      isPassword
-        ? "Ocultar"
-        : "Mostrar";
-
-    togglePassword.setAttribute(
-      "aria-label",
-      isPassword
-        ? "Ocultar senha"
-        : "Mostrar senha"
-    );
+  if (!snapshot.exists()) {
+    throw new Error("ADMIN_NOT_FOUND");
   }
-);
 
-/* =====================================================
-   RECUPERAR SENHA
-===================================================== */
+  const adminData = snapshot.data();
 
-forgotPasswordButton?.addEventListener(
-  "click",
-  async () => {
-    clearFeedback();
-
-    const email =
-      emailInput.value
-        .trim()
-        .toLowerCase();
-
-    if (!email) {
-      showFeedback(
-        "Digite seu e-mail antes de solicitar a recuperação."
-      );
-
-      emailInput.focus();
-      return;
-    }
-
-    try {
-      forgotPasswordButton.disabled = true;
-
-      showFeedback(
-        "Enviando link de recuperação...",
-        "info"
-      );
-
-      await sendPasswordResetEmail(
-        auth,
-        email
-      );
-
-      showFeedback(
-        "O link de recuperação foi enviado para seu e-mail.",
-        "success"
-      );
-    } catch (error) {
-      console.error(
-        "[LOGIN] Erro ao recuperar senha:",
-        error
-      );
-
-      showFeedback(
-        getFriendlyError(error),
-        "error"
-      );
-    } finally {
-      forgotPasswordButton.disabled = false;
-    }
+  if (
+    adminData.active !== true ||
+    !["owner", "admin", "editor"].includes(adminData.role)
+  ) {
+    throw new Error("ADMIN_INACTIVE");
   }
-);
 
-/* =====================================================
-   LOGIN
-===================================================== */
+  return adminData;
+}
 
-loginForm?.addEventListener(
-  "submit",
-  async event => {
-    event.preventDefault();
+function validateLoginForm() {
+  clearLoginErrors();
 
-    clearFeedback();
+  const email = normalizeText(emailInput.value).toLowerCase();
+  const password = passwordInput.value;
 
-    const email =
-      emailInput.value
-        .trim()
-        .toLowerCase();
+  let valid = true;
 
-    const password =
-      passwordInput.value;
-
-    if (!email || !password) {
-      showFeedback(
-        "Preencha o e-mail e a senha."
-      );
-
-      return;
-    }
-
-    if (!emailInput.validity.valid) {
-      showFeedback(
-        "Digite um e-mail válido."
-      );
-
-      emailInput.focus();
-      return;
-    }
-
-    if (password.length < 6) {
-      showFeedback(
-        "A senha deve ter pelo menos 6 caracteres."
-      );
-
-      passwordInput.focus();
-      return;
-    }
-
-    try {
-      setLoading(true);
-
-      showFeedback(
-        "Verificando suas credenciais...",
-        "info"
-      );
-
-      const persistence =
-        rememberInput?.checked
-          ? browserLocalPersistence
-          : browserSessionPersistence;
-
-      await setPersistence(
-        auth,
-        persistence
-      );
-
-      const credential =
-        await signInWithEmailAndPassword(
-          auth,
-          email,
-          password
-        );
-
-      console.log(
-        "[LOGIN] Usuário autenticado:",
-        credential.user.uid
-      );
-
-      showFeedback(
-        "Login realizado. Abrindo o painel...",
-        "success"
-      );
-
-      window.location.href =
-        "./admin.html";
-    } catch (error) {
-      console.error(
-        "[LOGIN] Erro no login:",
-        error
-      );
-
-      showFeedback(
-        getFriendlyError(error),
-        "error"
-      );
-
-      setLoading(false);
-    }
+  if (!isValidEmail(email)) {
+    setFieldError("email", "Informe um e-mail válido.");
+    valid = false;
   }
-);
 
-/* =====================================================
-   SESSÃO EXISTENTE
-===================================================== */
+  if (password.length < 6) {
+    setFieldError("password", "Digite uma senha com pelo menos 6 caracteres.");
+    valid = false;
+  }
 
-onAuthStateChanged(
-  auth,
-  user => {
-    if (authChecked) {
-      return;
-    }
+  return valid;
+}
 
-    authChecked = true;
+function setSubmitting(formElement, submitting) {
+  const button = formElement.querySelector('button[type="submit"]');
+  const text = button.querySelector(".button-text");
+  const loading = button.querySelector(".button-loading");
 
-    console.log(
-      "[LOGIN] Estado da autenticação:",
-      user?.uid || "sem usuário"
+  button.disabled = submitting;
+  text.hidden = submitting;
+  loading.hidden = !submitting;
+}
+
+async function handleLogin(event) {
+  event.preventDefault();
+
+  if (!validateLoginForm()) {
+    feedback.textContent = "Revise os campos destacados.";
+    feedback.classList.add("is-error");
+    return;
+  }
+
+  setSubmitting(form, true);
+
+  try {
+    const persistence = rememberInput.checked
+      ? browserLocalPersistence
+      : browserSessionPersistence;
+
+    await setPersistence(auth, persistence);
+
+    const credential = await signInWithEmailAndPassword(
+      auth,
+      normalizeText(emailInput.value).toLowerCase(),
+      passwordInput.value
     );
 
-    if (user) {
-      window.location.href =
-        "./admin.html";
+    feedback.textContent = "Login realizado. Verificando permissão...";
+    feedback.classList.add("is-success");
+
+    await validateAdminUser(credential.user);
+
+    window.location.replace(getRedirectTarget());
+  } catch (error) {
+    console.error("[LOGIN] Erro ao autenticar:", error);
+
+    if (
+      error?.message === "ADMIN_NOT_FOUND" ||
+      error?.message === "ADMIN_INACTIVE"
+    ) {
+      await signOut(auth).catch(() => {});
+
+      feedback.textContent =
+        "Sua conta não possui permissão ativa para acessar a Área dos Pais.";
+      feedback.classList.add("is-error");
+    } else {
+      feedback.textContent = translateAuthError(error);
+      feedback.classList.add("is-error");
     }
+  } finally {
+    setSubmitting(form, false);
   }
-);
+}
+
+function togglePasswordVisibility() {
+  const isVisible = passwordInput.type === "text";
+
+  passwordInput.type = isVisible ? "password" : "text";
+  passwordToggle.setAttribute("aria-pressed", String(!isVisible));
+  passwordToggle.setAttribute(
+    "aria-label",
+    isVisible ? "Mostrar senha" : "Ocultar senha"
+  );
+
+  passwordToggle.querySelector(".eye-open").hidden = !isVisible;
+  passwordToggle.querySelector(".eye-closed").hidden = isVisible;
+}
+
+function openResetDialog() {
+  clearResetErrors();
+
+  const currentEmail = normalizeText(emailInput.value);
+  resetEmailInput.value = currentEmail;
+
+  resetDialog.showModal();
+  document.body.classList.add("modal-open");
+
+  window.setTimeout(() => resetEmailInput.focus(), 50);
+}
+
+function closeReset() {
+  if (resetDialog.open) resetDialog.close();
+  document.body.classList.remove("modal-open");
+}
+
+async function handleResetPassword(event) {
+  event.preventDefault();
+  clearResetErrors();
+
+  const email = normalizeText(resetEmailInput.value).toLowerCase();
+
+  if (!isValidEmail(email)) {
+    setFieldError("resetEmail", "Informe um e-mail válido.");
+    return;
+  }
+
+  setSubmitting(resetForm, true);
+
+  try {
+    await sendPasswordResetEmail(auth, email);
+
+    resetFeedback.textContent =
+      "Enviamos o link de recuperação. Verifique também a pasta de spam.";
+    resetFeedback.classList.add("is-success");
+  } catch (error) {
+    console.error("[LOGIN] Erro ao enviar recuperação:", error);
+
+    if (error?.code === "auth/user-not-found") {
+      resetFeedback.textContent =
+        "Caso o e-mail esteja cadastrado, você receberá o link de recuperação.";
+      resetFeedback.classList.add("is-success");
+    } else {
+      resetFeedback.textContent = translateAuthError(error);
+      resetFeedback.classList.add("is-error");
+    }
+  } finally {
+    setSubmitting(resetForm, false);
+  }
+}
+
+function showQueryMessage() {
+  const params = new URLSearchParams(window.location.search);
+  const error = params.get("erro");
+
+  if (error === "sem-permissao") {
+    feedback.textContent =
+      "Sua conta não possui permissão ativa para acessar a Área dos Pais.";
+    feedback.classList.add("is-error");
+  }
+}
+
+onAuthStateChanged(auth, async (user) => {
+  if (!checkingInitialSession) return;
+  checkingInitialSession = false;
+
+  if (!user) {
+    showQueryMessage();
+    return;
+  }
+
+  try {
+    await validateAdminUser(user);
+    window.location.replace(getRedirectTarget());
+  } catch (error) {
+    console.warn("[LOGIN] Sessão sem acesso administrativo:", error);
+    await signOut(auth).catch(() => {});
+    showQueryMessage();
+  }
+});
+
+form?.addEventListener("submit", handleLogin);
+passwordToggle?.addEventListener("click", togglePasswordVisibility);
+forgotPasswordButton?.addEventListener("click", openResetDialog);
+closeResetDialog?.addEventListener("click", closeReset);
+resetForm?.addEventListener("submit", handleResetPassword);
+
+resetDialog?.addEventListener("close", () => {
+  document.body.classList.remove("modal-open");
+});

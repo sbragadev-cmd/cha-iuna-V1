@@ -2,151 +2,119 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
-  >
-
-  <meta
-    name="description"
-    content="Acesso reservado aos pais para administrar o Chá da Iúna."
-  >
-
-  <meta name="theme-color" content="#76549b">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <title>Área dos Pais | Chá da Iúna</title>
 
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-
-  <link
-    rel="preconnect"
-    href="https://fonts.gstatic.com"
-    crossorigin
+  <meta
+    name="description"
+    content="Acesso reservado à Área dos Pais do Chá da Iúna."
   >
+  <meta name="theme-color" content="#5b3e7f">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
   <link
     href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap"
     rel="stylesheet"
   >
 
-  <link
-    rel="stylesheet"
-    href="./assets/css/admin.css"
-  >
+  <link rel="stylesheet" href="./assets/css/login.css">
 </head>
 
-<body class="auth-page">
-  <main class="auth-shell">
-    <section
-      class="auth-art"
-      aria-label="Boas-vindas à área administrativa"
-    >
-      <a
-        class="auth-brand"
-        href="./index.html"
-        aria-label="Voltar para a página inicial"
-      >
-        <span
-          class="brand-mark"
-          aria-hidden="true"
-        >
-          I
-        </span>
+<body>
+  <a class="skip-link" href="#loginForm">Ir para o formulário</a>
 
-        <span>
-          <strong>Chá da Iúna</strong>
-          <small>área reservada dos pais</small>
-        </span>
-      </a>
+  <main class="login-page">
+    <section class="login-visual" aria-label="Boas-vindas à Área dos Pais">
+      <div class="visual-overlay"></div>
 
-      <div class="auth-message">
-        <span class="auth-kicker">
-          Organização com carinho
-        </span>
+      <div class="visual-content">
+        <a class="brand" href="./index.html" aria-label="Voltar ao início">
+          <span class="brand-mark">I</span>
+          <span>
+            <strong>Chá da Iúna</strong>
+            <small>Área dos Pais</small>
+          </span>
+        </a>
 
-        <h1>
-          Cada detalhe da festa em um só lugar.
-        </h1>
+        <div class="visual-copy">
+          <p class="eyebrow">Um cantinho especial</p>
+          <h1>Organizar cada detalhe também é uma forma de amar.</h1>
+          <p>
+            Acompanhem confirmações, presentes, recadinhos e fotos em um só lugar.
+          </p>
+        </div>
 
-        <p>
-          Convidados, presentes, galeria e planejamento
-          reunidos em um painel simples, seguro e acolhedor.
-        </p>
+        <div class="visual-events">
+          <article>
+            <span>Bagé</span>
+            <strong>05/09/2026 • 15h</strong>
+            <small>Sítio Mãe Velha</small>
+          </article>
+
+          <article>
+            <span>Porto Alegre</span>
+            <strong>03/10/2026 • 15h</strong>
+            <small>Rua Martins de Lima, 25 — Partenon</small>
+          </article>
+        </div>
       </div>
 
-      <div
-        class="auth-decoration"
-        aria-hidden="true"
-      >
-        <span class="sun"></span>
-
-        <span class="hill hill-one"></span>
-
-        <span class="hill hill-two"></span>
-
-        <span class="flower flower-one">
-          ✿
-        </span>
-
-        <span class="flower flower-two">
-          ✿
-        </span>
-
-        <span class="flower flower-three">
-          ✿
-        </span>
+      <div class="visual-decoration" aria-hidden="true">
+        <span class="heart">♥</span>
+        <span class="spark spark-one">✦</span>
+        <span class="spark spark-two">✧</span>
       </div>
     </section>
 
-    <section
-      class="auth-panel"
-      aria-labelledby="login-title"
-    >
-      <div class="auth-card">
-        <a
-          class="back-link"
-          href="./index.html"
-        >
-          ← Voltar ao site
+    <section class="login-panel">
+      <div class="login-card">
+        <a class="mobile-brand" href="./index.html" aria-label="Voltar ao início">
+          <span class="brand-mark">I</span>
+          <span>
+            <strong>Chá da Iúna</strong>
+            <small>Área dos Pais</small>
+          </span>
         </a>
 
-        <p class="eyebrow">
-          Acesso seguro
-        </p>
+        <div class="login-heading">
+          <p class="eyebrow">Acesso reservado</p>
+          <h2>Bem-vindos de volta.</h2>
+          <p>
+            Entre com o e-mail autorizado para acessar o painel administrativo.
+          </p>
+        </div>
 
-        <h2 id="login-title">
-          Entrar na área dos pais
-        </h2>
-
-        <p class="auth-intro">
-          Use o e-mail cadastrado no Firebase para acessar
-          o painel administrativo do Chá da Iúna.
-        </p>
-
-        <form
-          id="loginForm"
-          class="auth-form"
-          novalidate
-        >
-          <label for="email">
-            <span>E-mail</span>
-
+        <form id="loginForm" novalidate>
+          <div class="form-field">
+            <label for="email">E-mail</label>
             <input
               id="email"
               name="email"
               type="email"
               autocomplete="email"
-              inputmode="email"
               placeholder="seuemail@exemplo.com"
               required
             >
-          </label>
+            <p class="field-error" id="emailError"></p>
+          </div>
 
-          <label for="password">
-            <span>Senha</span>
+          <div class="form-field">
+            <div class="label-row">
+              <label for="password">Senha</label>
 
-            <div class="password-field">
+              <button
+                class="text-button"
+                id="forgotPasswordButton"
+                type="button"
+              >
+                Esqueci minha senha
+              </button>
+            </div>
+
+            <div class="password-wrap">
               <input
                 id="password"
                 name="password"
@@ -158,69 +126,105 @@
               >
 
               <button
-                id="togglePassword"
+                class="password-toggle"
+                id="passwordToggle"
                 type="button"
                 aria-label="Mostrar senha"
+                aria-pressed="false"
               >
-                Mostrar
+                <span class="eye-open">Mostrar</span>
+                <span class="eye-closed" hidden>Ocultar</span>
               </button>
             </div>
-          </label>
 
-          <div class="form-row">
-            <label class="check-field">
-              <input
-                id="remember"
-                name="remember"
-                type="checkbox"
-              >
-
-              <span>
-                Manter conectado
-              </span>
-            </label>
-
-            <button
-              class="link-button"
-              type="button"
-              id="forgotPassword"
-            >
-              Esqueci minha senha
-            </button>
+            <p class="field-error" id="passwordError"></p>
           </div>
 
-          <button
-            class="primary-button full-button"
-            type="submit"
-          >
-            <span>
-              Entrar no painel
-            </span>
-          </button>
+          <label class="remember-field">
+            <input id="rememberMe" type="checkbox" checked>
+            <span>Manter-me conectado neste dispositivo</span>
+          </label>
 
           <div
-            id="loginFeedback"
             class="form-feedback"
+            id="loginFeedback"
             role="status"
             aria-live="polite"
           ></div>
+
+          <button class="button button-primary button-full" type="submit">
+            <span class="button-text">Entrar na Área dos Pais</span>
+            <span class="button-loading" hidden>
+              <span class="spinner" aria-hidden="true"></span>
+              Entrando...
+            </span>
+          </button>
         </form>
 
-        <div class="auth-security-note">
-          <span aria-hidden="true">✓</span>
-
+        <div class="login-help">
+          <span aria-hidden="true">♡</span>
           <p>
-            O acesso é protegido pelo Firebase Authentication
-            e permitido somente para administradores cadastrados.
+            Este acesso é exclusivo para os administradores cadastrados no
+            projeto do Chá da Iúna.
           </p>
         </div>
+
+        <a class="back-link" href="./index.html">
+          ← Voltar para o site
+        </a>
       </div>
     </section>
   </main>
 
-  <script
-    type="module"
-    src="./assets/js/login.js"
-  ></script>
+  <dialog class="reset-dialog" id="resetDialog">
+    <form class="reset-card" id="resetForm" novalidate>
+      <button
+        class="dialog-close"
+        id="closeResetDialog"
+        type="button"
+        aria-label="Fechar"
+      >
+        ×
+      </button>
+
+      <div class="reset-icon" aria-hidden="true">✉</div>
+
+      <p class="eyebrow">Recuperar acesso</p>
+      <h2>Redefinir sua senha</h2>
+      <p>
+        Informe o e-mail cadastrado. O Firebase enviará um link para criar
+        uma nova senha.
+      </p>
+
+      <div class="form-field">
+        <label for="resetEmail">E-mail</label>
+        <input
+          id="resetEmail"
+          type="email"
+          autocomplete="email"
+          placeholder="seuemail@exemplo.com"
+          required
+        >
+        <p class="field-error" id="resetEmailError"></p>
+      </div>
+
+      <div
+        class="form-feedback"
+        id="resetFeedback"
+        role="status"
+        aria-live="polite"
+      ></div>
+
+      <button class="button button-primary button-full" type="submit">
+        <span class="button-text">Enviar link de recuperação</span>
+        <span class="button-loading" hidden>
+          <span class="spinner" aria-hidden="true"></span>
+          Enviando...
+        </span>
+      </button>
+    </form>
+  </dialog>
+
+  <script type="module" src="./assets/js/login.js"></script>
 </body>
 </html>
