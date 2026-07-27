@@ -3,301 +3,541 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#76549b">
-  <title>Painel dos Pais | Chá da Iúna</title>
+
+  <title>Área dos Pais | Chá da Iúna</title>
+
+  <meta
+    name="description"
+    content="Painel administrativo do Chá da Iúna."
+  >
+  <meta name="theme-color" content="#5b3e7f">
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap"
+    rel="stylesheet"
+  >
+
   <link rel="stylesheet" href="./assets/css/admin.css">
-  <link rel="stylesheet" href="./assets/css/admin-gifts.css">
-  
 </head>
-<body class="admin-page">
-  <div class="admin-layout">
+
+<body>
+  <div class="admin-loading" id="adminLoading">
+    <div class="admin-loading-card">
+      <span class="admin-loading-mark">I</span>
+      <strong>Carregando Área dos Pais...</strong>
+      <small>Verificando acesso e sincronizando os dados.</small>
+    </div>
+  </div>
+
+  <div class="admin-app" id="adminApp" hidden>
     <aside class="sidebar" id="sidebar">
-      <div class="sidebar-head">
-        <a class="sidebar-brand" href="./index.html">
+      <div class="sidebar-brand">
+        <a href="./index.html" aria-label="Voltar para o site">
           <span class="brand-mark">I</span>
-          <span><strong>Chá da Iúna</strong><small>painel dos pais</small></span>
+          <span>
+            <strong>Chá da Iúna</strong>
+            <small>Área dos Pais</small>
+          </span>
         </a>
-        <button class="sidebar-close" id="sidebarClose" type="button" aria-label="Fechar menu">×</button>
       </div>
 
-      <nav class="sidebar-nav" aria-label="Menu administrativo">
-        <button class="nav-item active" type="button" data-view="dashboard">
-          <span class="nav-icon">⌂</span><span>Visão geral</span>
+      <nav class="sidebar-nav" aria-label="Navegação administrativa">
+        <button class="nav-item active" type="button" data-section="dashboard">
+          <span class="nav-icon">⌂</span>
+          <span>Visão geral</span>
         </button>
-        <button class="nav-item" type="button" data-view="guests">
-          <span class="nav-icon">♧</span><span>Convidados</span><small id="guestBadge">0</small>
+
+        <button class="nav-item" type="button" data-section="guests">
+          <span class="nav-icon">👥</span>
+          <span>Convidados</span>
+          <span class="nav-badge" id="guestsBadge">0</span>
         </button>
-        <button class="nav-item" type="button" data-view="gallery">
-          <span class="nav-icon">▧</span><span>Galeria</span>
+
+        <button class="nav-item" type="button" data-section="gifts">
+          <span class="nav-icon">🎁</span>
+          <span>Presentes</span>
         </button>
-        <button class="nav-item" type="button" data-view="gifts">
-          <span class="nav-icon">□</span><span>Presentes</span>
+
+        <button class="nav-item" type="button" data-section="giftSelections">
+          <span class="nav-icon">♡</span>
+          <span>Escolhas</span>
+          <span class="nav-badge" id="giftSelectionsBadge">0</span>
         </button>
-        <button class="nav-item" type="button" data-view="party">
-          <span class="nav-icon">✓</span><span>Gestão da festa</span>
+
+        <button class="nav-item" type="button" data-section="messages">
+          <span class="nav-icon">✉</span>
+          <span>Recadinhos</span>
+          <span class="nav-badge warning" id="messagesBadge">0</span>
+        </button>
+
+        <button class="nav-item" type="button" data-section="gallery">
+          <span class="nav-icon">▧</span>
+          <span>Galeria</span>
+          <span class="nav-badge warning" id="galleryBadge">0</span>
+        </button>
+
+        <button class="nav-item" type="button" data-section="events">
+          <span class="nav-icon">◷</span>
+          <span>Eventos</span>
         </button>
       </nav>
 
       <div class="sidebar-footer">
-        <div class="event-mini-card">
-          <span>Próximo evento</span>
-          <strong>05 set. 2026</strong>
-          <small>15h • Bagé/RS</small>
-        </div>
-        <button class="nav-item logout-button" id="logoutButton" type="button">
-          <span class="nav-icon">↪</span><span>Sair</span>
+        <a class="site-link" href="./index.html" target="_blank" rel="noopener">
+          Abrir site público
+        </a>
+
+        <button class="logout-button" id="logoutButton" type="button">
+          Sair da Área dos Pais
         </button>
       </div>
     </aside>
 
-    <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+    <div class="admin-main">
+      <header class="topbar">
+        <button
+          class="sidebar-toggle"
+          id="sidebarToggle"
+          type="button"
+          aria-label="Abrir menu administrativo"
+          aria-expanded="false"
+        >
+          ☰
+        </button>
 
-    <main class="admin-main">
-      <header class="admin-header">
-        <div class="header-left">
-          <button class="menu-button" id="menuButton" type="button" aria-label="Abrir menu">☰</button>
-          <div>
-            <span class="header-date" id="currentDate"></span>
-            <h1 id="pageTitle">Visão geral</h1>
-          </div>
+        <div class="topbar-title">
+          <p id="sectionEyebrow">Área dos Pais</p>
+          <h1 id="sectionTitle">Visão geral</h1>
         </div>
-        <div class="header-actions">
-          <a class="visit-site" href="./index.html" target="_blank" rel="noopener">Ver site público ↗</a>
-          <button class="profile-button" type="button" aria-label="Perfil dos pais">
-            <span>PI</span>
-            <span class="profile-copy"><strong>Pais da Iúna</strong><small>Administradores</small></span>
+
+        <div class="topbar-actions">
+          <button class="sync-button" id="syncButton" type="button">
+            <span>↻</span>
+            Sincronizar
           </button>
+
+          <div class="admin-profile">
+            <span class="profile-avatar" id="profileAvatar">P</span>
+            <span>
+              <strong id="profileName">Pais da Iúna</strong>
+              <small id="profileRole">Administrador</small>
+            </span>
+          </div>
         </div>
       </header>
 
-      <div class="admin-content">
-        <section class="view active" id="view-dashboard" data-view-panel="dashboard">
-          <div class="welcome-card">
+      <main class="admin-content">
+        <section class="admin-section active" id="section-dashboard">
+          <div class="welcome-panel">
             <div>
-              <p class="eyebrow">Boa organização</p>
-              <h2>Olá, família da Iúna! 💜</h2>
-              <p>Faltam <strong id="daysUntilEvent">0 dias</strong> para o nosso encontro. Vamos deixar tudo prontinho?</p>
+              <p class="eyebrow">Tudo em um só lugar</p>
+              <h2>Bem-vindos à Área dos Pais.</h2>
+              <p>
+                Acompanhem confirmações, presentes, recadinhos, fotos e os
+                dois encontros da Iúna em tempo real.
+              </p>
             </div>
-            <button class="primary-button" type="button" data-go-view="party">Ver planejamento</button>
+
+            <span class="welcome-heart">♥</span>
           </div>
 
-          <div class="stats-grid">
-            <article class="stat-card">
-              <span class="stat-icon lilac">♧</span>
-              <div><small>Convidados</small><strong id="statGuests">0</strong><span id="statConfirmed">0 confirmados</span></div>
+          <div class="kpi-grid">
+            <article class="kpi-card">
+              <span class="kpi-icon">👥</span>
+              <div>
+                <small>Confirmações recebidas</small>
+                <strong id="kpiRsvps">0</strong>
+                <span id="kpiRsvpsDetail">0 pessoas confirmadas</span>
+              </div>
             </article>
-            <article class="stat-card">
-              <span class="stat-icon green">▧</span>
-              <div><small>Fotos na galeria</small><strong id="statPhotos">0</strong><span>itens publicados</span></div>
+
+            <article class="kpi-card">
+              <span class="kpi-icon">🎁</span>
+              <div>
+                <small>Presentes cadastrados</small>
+                <strong id="kpiGifts">0</strong>
+                <span id="kpiGiftsDetail">0 unidades escolhidas</span>
+              </div>
             </article>
-            <article class="stat-card">
-              <span class="stat-icon yellow">□</span>
-              <div><small>Presentes</small><strong id="statGifts">0</strong><span id="statReserved">0 reservados</span></div>
+
+            <article class="kpi-card">
+              <span class="kpi-icon">✉</span>
+              <div>
+                <small>Recadinhos pendentes</small>
+                <strong id="kpiMessages">0</strong>
+                <span>Aguardando aprovação</span>
+              </div>
             </article>
-            <article class="stat-card">
-              <span class="stat-icon coral">✓</span>
-              <div><small>Tarefas</small><strong id="statTasks">0</strong><span id="statDone">0 concluídas</span></div>
+
+            <article class="kpi-card">
+              <span class="kpi-icon">▧</span>
+              <div>
+                <small>Fotos pendentes</small>
+                <strong id="kpiGallery">0</strong>
+                <span>Aguardando aprovação</span>
+              </div>
             </article>
           </div>
 
           <div class="dashboard-grid">
-            <section class="panel">
-              <div class="panel-head">
-                <div><p class="eyebrow">Presenças</p><h3>Resumo dos convidados</h3></div>
-                <button class="text-button" type="button" data-go-view="guests">Gerenciar</button>
-              </div>
-              <div class="attendance-layout">
-                <div class="donut" id="attendanceDonut"><span id="attendancePercent">0%</span></div>
-                <div class="legend">
-                  <span><i class="dot confirmed"></i>Confirmados <strong id="legendConfirmed">0</strong></span>
-                  <span><i class="dot pending"></i>Aguardando <strong id="legendPending">0</strong></span>
-                  <span><i class="dot declined"></i>Não irão <strong id="legendDeclined">0</strong></span>
+            <article class="panel">
+              <div class="panel-header">
+                <div>
+                  <p class="eyebrow">Presenças por evento</p>
+                  <h2>Bagé e Porto Alegre</h2>
                 </div>
               </div>
-            </section>
 
-            <section class="panel">
-              <div class="panel-head">
-                <div><p class="eyebrow">Próximos passos</p><h3>Tarefas prioritárias</h3></div>
-                <button class="text-button" type="button" data-go-view="party">Ver todas</button>
+              <div class="event-summary-grid">
+                <article>
+                  <span>Bagé</span>
+                  <strong id="bagePeople">0</strong>
+                  <small>pessoas confirmadas</small>
+                  <div class="mini-stats">
+                    <span><b id="bageAdults">0</b> adultos</span>
+                    <span><b id="bageChildren">0</b> crianças</span>
+                  </div>
+                </article>
+
+                <article>
+                  <span>Porto Alegre</span>
+                  <strong id="poaPeople">0</strong>
+                  <small>pessoas confirmadas</small>
+                  <div class="mini-stats">
+                    <span><b id="poaAdults">0</b> adultos</span>
+                    <span><b id="poaChildren">0</b> crianças</span>
+                  </div>
+                </article>
               </div>
-              <div class="priority-list" id="priorityList"></div>
-            </section>
+            </article>
+
+            <article class="panel">
+              <div class="panel-header">
+                <div>
+                  <p class="eyebrow">Atividade recente</p>
+                  <h2>Últimas atualizações</h2>
+                </div>
+              </div>
+
+              <div class="activity-list" id="activityList">
+                <p class="empty-copy">As atividades aparecerão aqui.</p>
+              </div>
+            </article>
           </div>
         </section>
 
-        <section class="view" id="view-guests" data-view-panel="guests">
-          <div class="view-toolbar">
-            <div><p class="eyebrow">Lista de convidados</p><h2>Gerencie presenças e acompanhantes</h2></div>
-            <button class="primary-button" type="button" data-open-modal="guestModal">+ Novo convidado</button>
+        <section class="admin-section" id="section-guests">
+          <div class="section-toolbar">
+            <div>
+              <p class="eyebrow">Lista automática</p>
+              <h2>Convidados e confirmações</h2>
+              <p>
+                A lista muda automaticamente quando um convidado confirma ou
+                informa que não poderá comparecer.
+              </p>
+            </div>
           </div>
 
           <div class="filter-bar">
-            <label class="search-field"><span>⌕</span><input id="guestSearch" type="search" placeholder="Buscar por nome ou telefone"></label>
-            <select id="guestStatusFilter" aria-label="Filtrar convidados por status">
+            <input
+              id="guestSearch"
+              type="search"
+              placeholder="Buscar por nome, telefone ou protocolo"
+            >
+
+            <select id="guestEventFilter">
+              <option value="all">Todos os eventos</option>
+              <option value="bage">Bagé</option>
+              <option value="porto-alegre">Porto Alegre</option>
+            </select>
+
+            <select id="guestStatusFilter">
               <option value="all">Todos os status</option>
               <option value="confirmed">Confirmados</option>
-              <option value="pending">Aguardando</option>
-              <option value="declined">Não irão</option>
+              <option value="declined">Não poderão ir</option>
             </select>
           </div>
 
-          <section class="panel table-panel">
-            <div class="table-wrap">
+          <div class="table-card">
+            <div class="table-scroll">
               <table>
-                <thead><tr><th>Convidado</th><th>Contato</th><th>Grupo</th><th>Pessoas</th><th>Status</th><th>Ações</th></tr></thead>
-                <tbody id="guestTableBody"></tbody>
+                <thead>
+                  <tr>
+                    <th>Convidado</th>
+                    <th>Evento</th>
+                    <th>Status</th>
+                    <th>Adultos</th>
+                    <th>Crianças</th>
+                    <th>Total</th>
+                    <th>Telefone</th>
+                    <th>Protocolo</th>
+                    <th>Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="guestsTableBody">
+                  <tr>
+                    <td colspan="9" class="table-empty">Carregando convidados...</td>
+                  </tr>
+                </tbody>
               </table>
             </div>
-            <div class="empty-state" id="guestEmpty" hidden>Nenhum convidado encontrado.</div>
-          </section>
+          </div>
         </section>
 
-        <section class="view" id="view-gallery" data-view-panel="gallery">
-          <div class="view-toolbar">
-            <div><p class="eyebrow">Galeria</p><h2>Cuide das memórias exibidas no site</h2></div>
-            <button class="primary-button" type="button" data-open-modal="photoModal">+ Adicionar foto</button>
+        <section class="admin-section" id="section-gifts">
+          <div class="section-toolbar">
+            <div>
+              <p class="eyebrow">Lista de presentes</p>
+              <h2>Cadastro e controle dos itens</h2>
+              <p>
+                Os presentes ativos aparecem automaticamente na página pública.
+              </p>
+            </div>
+
+            <button class="button button-primary" id="newGiftButton" type="button">
+              + Cadastrar presente
+            </button>
           </div>
-          <div class="gallery-admin-grid" id="galleryGrid"></div>
-          <div class="empty-state card-empty" id="galleryEmpty" hidden>Nenhuma foto adicionada.</div>
+
+          <div class="filter-bar">
+            <input
+              id="giftAdminSearch"
+              type="search"
+              placeholder="Buscar por nome ou categoria"
+            >
+
+            <select id="giftAdminStatusFilter">
+              <option value="all">Todos os itens</option>
+              <option value="active">Ativos</option>
+              <option value="inactive">Inativos</option>
+              <option value="available">Com unidades disponíveis</option>
+              <option value="finished">Quantidade esgotada</option>
+            </select>
+          </div>
+
+          <div class="admin-gifts-grid" id="adminGiftsGrid">
+            <p class="empty-copy">Carregando presentes...</p>
+          </div>
         </section>
 
-        <section class="view" id="view-gifts" data-view-panel="gifts">
-          <div class="view-toolbar">
-            <div><p class="eyebrow">Lista de presentes</p><h2>Organize sugestões e reservas</h2></div>
-            <button class="primary-button" type="button" data-open-modal="giftModal">+ Novo presente</button>
+        <section class="admin-section" id="section-giftSelections">
+          <div class="section-toolbar">
+            <div>
+              <p class="eyebrow">Escolhas dos convidados</p>
+              <h2>Quem escolheu cada presente</h2>
+              <p>
+                Estes dados ficam visíveis somente na Área dos Pais.
+              </p>
+            </div>
           </div>
-          <div class="gift-summary" id="giftSummary"></div>
-          <section class="panel table-panel">
-            <div class="table-wrap">
+
+          <div class="filter-bar">
+            <input
+              id="selectionSearch"
+              type="search"
+              placeholder="Buscar convidado, telefone ou presente"
+            >
+          </div>
+
+          <div class="table-card">
+            <div class="table-scroll">
               <table>
-                <thead><tr><th>Presente</th><th>Categoria</th><th>Faixa de preço</th><th>Prioridade</th><th>Situação</th><th>Ações</th></tr></thead>
-                <tbody id="giftTableBody"></tbody>
+                <thead>
+                  <tr>
+                    <th>Convidado</th>
+                    <th>Telefone</th>
+                    <th>Presente</th>
+                    <th>Quantidade</th>
+                    <th>Recadinho</th>
+                    <th>Data</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="giftSelectionsTableBody">
+                  <tr>
+                    <td colspan="7" class="table-empty">Carregando escolhas...</td>
+                  </tr>
+                </tbody>
               </table>
             </div>
-          </section>
-        </section>
-
-        <section class="view" id="view-party" data-view-panel="party">
-          <div class="view-toolbar">
-            <div><p class="eyebrow">Gestão da festa</p><h2>Planejamento, tarefas e orçamento</h2></div>
-            <button class="primary-button" type="button" data-open-modal="taskModal">+ Nova tarefa</button>
-          </div>
-
-          <div class="party-summary">
-            <article class="summary-card"><small>Orçamento previsto</small><strong id="budgetPlanned">R$ 0,00</strong></article>
-            <article class="summary-card"><small>Total realizado</small><strong id="budgetSpent">R$ 0,00</strong></article>
-            <article class="summary-card"><small>Saldo disponível</small><strong id="budgetBalance">R$ 0,00</strong></article>
-          </div>
-
-          <div class="dashboard-grid party-grid">
-            <section class="panel">
-              <div class="panel-head"><div><p class="eyebrow">Checklist</p><h3>Tarefas da festa</h3></div></div>
-              <div class="task-list" id="taskList"></div>
-            </section>
-
-            <section class="panel">
-              <div class="panel-head"><div><p class="eyebrow">Orçamento</p><h3>Controle financeiro</h3></div><button class="text-button" type="button" id="editBudgetButton">Editar limite</button></div>
-              <div class="budget-progress">
-                <div><span>Utilizado</span><strong id="budgetPercent">0%</strong></div>
-                <div class="progress-track"><span id="budgetProgressBar"></span></div>
-              </div>
-              <div class="expense-list" id="expenseList"></div>
-              <button class="secondary-button full-button" type="button" data-open-modal="expenseModal">+ Adicionar despesa</button>
-            </section>
           </div>
         </section>
+
+        <section class="admin-section" id="section-messages">
+          <div class="section-toolbar">
+            <div>
+              <p class="eyebrow">Moderação</p>
+              <h2>Recadinhos para a Iúna</h2>
+              <p>
+                Aprove os recadinhos que poderão aparecer no site público.
+              </p>
+            </div>
+          </div>
+
+          <div class="moderation-grid" id="messagesGrid">
+            <p class="empty-copy">Carregando recadinhos...</p>
+          </div>
+        </section>
+
+        <section class="admin-section" id="section-gallery">
+          <div class="section-toolbar">
+            <div>
+              <p class="eyebrow">Moderação</p>
+              <h2>Fotos enviadas</h2>
+              <p>
+                Aprove ou recuse as imagens antes da publicação na galeria.
+              </p>
+            </div>
+          </div>
+
+          <div class="gallery-admin-grid" id="galleryAdminGrid">
+            <p class="empty-copy">Carregando fotos...</p>
+          </div>
+        </section>
+
+        <section class="admin-section" id="section-events">
+          <div class="section-toolbar">
+            <div>
+              <p class="eyebrow">Informações oficiais</p>
+              <h2>Eventos da Iúna</h2>
+              <p>
+                Revise as informações exibidas no painel administrativo.
+              </p>
+            </div>
+          </div>
+
+          <div class="events-admin-grid">
+            <article class="event-admin-card">
+              <span class="event-label">Família</span>
+              <h3>Bagé</h3>
+              <dl>
+                <div><dt>Data</dt><dd>05/09/2026</dd></div>
+                <div><dt>Horário</dt><dd>15 horas</dd></div>
+                <div><dt>Local</dt><dd>Sítio Mãe Velha</dd></div>
+                <div><dt>Cidade</dt><dd>Bagé/RS</dd></div>
+              </dl>
+            </article>
+
+            <article class="event-admin-card green">
+              <span class="event-label">Amigos</span>
+              <h3>Porto Alegre</h3>
+              <dl>
+                <div><dt>Data</dt><dd>03/10/2026</dd></div>
+                <div><dt>Horário</dt><dd>15 horas</dd></div>
+                <div><dt>Local</dt><dd>Rua Martins de Lima, 25</dd></div>
+                <div><dt>Bairro</dt><dd>Partenon — Porto Alegre/RS</dd></div>
+              </dl>
+            </article>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <dialog id="giftDialog" class="admin-dialog">
+    <form id="giftForm" class="dialog-shell">
+      <button
+        id="closeGiftDialog"
+        class="dialog-close"
+        type="button"
+        aria-label="Fechar"
+      >
+        ×
+      </button>
+
+      <div class="dialog-heading">
+        <p class="eyebrow">Lista de presentes</p>
+        <h2 id="giftDialogTitle">Cadastrar presente</h2>
       </div>
-    </main>
-  </div>
 
-  <div class="modal" id="guestModal" aria-hidden="true">
-    <div class="modal-dialog">
-      <div class="modal-head"><div><p class="eyebrow">Convidados</p><h3 id="guestModalTitle">Novo convidado</h3></div><button class="modal-close" type="button">×</button></div>
-      <form id="guestForm" class="modal-form">
-        <input id="guestId" type="hidden">
-        <label><span>Nome completo</span><input id="guestName" required></label>
-        <div class="form-grid">
-          <label><span>Telefone</span><input id="guestPhone" placeholder="(00) 00000-0000"></label>
-          <label><span>Grupo</span><select id="guestGroup"><option>Família</option><option>Amigos</option><option>Trabalho</option><option>Capoeira</option><option>Outro</option></select></label>
+      <input id="giftId" type="hidden">
+
+      <div class="form-grid">
+        <div class="form-field form-field-full">
+          <label for="giftName">Nome do presente *</label>
+          <input id="giftName" type="text" maxlength="120" required>
         </div>
-        <div class="form-grid">
-          <label><span>Total de pessoas</span><input id="guestPeople" type="number" min="1" value="1"></label>
-          <label><span>Status</span><select id="guestStatus"><option value="pending">Aguardando</option><option value="confirmed">Confirmado</option><option value="declined">Não irá</option></select></label>
+
+        <div class="form-field">
+          <label for="giftCategory">Categoria *</label>
+          <select id="giftCategory" required>
+            <option value="">Selecione</option>
+            <option value="Fraldas">Fraldas</option>
+            <option value="Higiene">Higiene</option>
+            <option value="Roupinhas">Roupinhas</option>
+            <option value="Quarto">Quarto</option>
+            <option value="Passeio">Passeio</option>
+            <option value="Alimentação">Alimentação</option>
+            <option value="Brinquedos">Brinquedos</option>
+            <option value="Outros">Outros</option>
+          </select>
         </div>
-        <label><span>Observações</span><textarea id="guestNotes" rows="3" placeholder="Crianças, restrições alimentares ou recados"></textarea></label>
-        <div class="modal-actions"><button class="secondary-button modal-cancel" type="button">Cancelar</button><button class="primary-button" type="submit">Salvar convidado</button></div>
-      </form>
+
+        <div class="form-field">
+          <label for="giftQuantity">Quantidade total *</label>
+          <input id="giftQuantity" type="number" min="1" max="100" value="1" required>
+        </div>
+
+        <div class="form-field form-field-full">
+          <label for="giftDescription">Descrição</label>
+          <textarea id="giftDescription" rows="4" maxlength="500"></textarea>
+        </div>
+
+        <div class="form-field form-field-full">
+          <label for="giftImage">Imagem do presente</label>
+          <input id="giftImage" type="file" accept="image/jpeg,image/png,image/webp">
+          <small>A imagem será reduzida antes de ser salva no Firestore.</small>
+        </div>
+
+        <div class="image-preview-wrap form-field-full" id="giftImagePreviewWrap" hidden>
+          <img id="giftImagePreview" alt="Pré-visualização do presente">
+          <button id="removeGiftImage" type="button">Remover imagem</button>
+        </div>
+
+        <label class="switch-field form-field-full">
+          <input id="giftActive" type="checkbox" checked>
+          <span>
+            <b>Presente ativo</b>
+            <small>Quando ativo, aparece na página pública.</small>
+          </span>
+        </label>
+      </div>
+
+      <p
+        class="form-feedback"
+        id="giftFormFeedback"
+        role="status"
+        aria-live="polite"
+      ></p>
+
+      <button class="button button-primary button-full" type="submit">
+        <span class="button-text">Salvar presente</span>
+        <span class="button-loading" hidden>Salvando...</span>
+      </button>
+    </form>
+  </dialog>
+
+  <dialog id="confirmDialog" class="admin-dialog confirm-dialog">
+    <div class="dialog-shell compact">
+      <p class="eyebrow">Confirmação</p>
+      <h2 id="confirmDialogTitle">Confirmar ação</h2>
+      <p id="confirmDialogMessage"></p>
+
+      <div class="dialog-actions">
+        <button class="button button-secondary" id="cancelConfirm" type="button">
+          Cancelar
+        </button>
+        <button class="button button-danger" id="acceptConfirm" type="button">
+          Confirmar
+        </button>
+      </div>
     </div>
-  </div>
+  </dialog>
 
-  <div class="modal" id="photoModal" aria-hidden="true">
-    <div class="modal-dialog">
-      <div class="modal-head"><div><p class="eyebrow">Galeria</p><h3>Adicionar foto</h3></div><button class="modal-close" type="button">×</button></div>
-      <form id="photoForm" class="modal-form">
-        <label><span>Título</span><input id="photoTitle" required placeholder="Ex.: Nosso primeiro ultrassom"></label>
-        <label><span>Endereço da imagem</span><input id="photoUrl" type="url" placeholder="https://..."></label>
-        <label><span>Descrição</span><textarea id="photoDescription" rows="3"></textarea></label>
-        <label class="check-field"><input id="photoPublished" type="checkbox" checked><span>Publicar no site</span></label>
-        <div class="modal-actions"><button class="secondary-button modal-cancel" type="button">Cancelar</button><button class="primary-button" type="submit">Adicionar foto</button></div>
-      </form>
-    </div>
-  </div>
-
-  <div class="modal" id="giftModal" aria-hidden="true">
-    <div class="modal-dialog">
-      <div class="modal-head"><div><p class="eyebrow">Presentes</p><h3>Novo presente</h3></div><button class="modal-close" type="button">×</button></div>
-      <form id="giftForm" class="modal-form">
-        <label><span>Nome do presente</span><input id="giftName" required></label>
-        <div class="form-grid">
-          <label><span>Categoria</span><select id="giftCategory"><option>Fraldas</option><option>Higiene</option><option>Roupas</option><option>Quarto</option><option>Alimentação</option><option>Outro</option></select></label>
-          <label><span>Faixa de preço</span><input id="giftPrice" placeholder="Ex.: R$ 50 a R$ 90"></label>
-        </div>
-        <div class="form-grid">
-          <label><span>Prioridade</span><select id="giftPriority"><option value="high">Alta</option><option value="medium">Média</option><option value="low">Baixa</option></select></label>
-          <label><span>Situação</span><select id="giftStatus"><option value="available">Disponível</option><option value="reserved">Reservado</option><option value="received">Recebido</option></select></label>
-        </div>
-        <label><span>Link opcional</span><input id="giftLink" type="url" placeholder="https://..."></label>
-        <div class="modal-actions"><button class="secondary-button modal-cancel" type="button">Cancelar</button><button class="primary-button" type="submit">Salvar presente</button></div>
-      </form>
-    </div>
-  </div>
-
-  <div class="modal" id="taskModal" aria-hidden="true">
-    <div class="modal-dialog">
-      <div class="modal-head"><div><p class="eyebrow">Planejamento</p><h3>Nova tarefa</h3></div><button class="modal-close" type="button">×</button></div>
-      <form id="taskForm" class="modal-form">
-        <label><span>Tarefa</span><input id="taskTitle" required></label>
-        <div class="form-grid">
-          <label><span>Responsável</span><input id="taskOwner" placeholder="Ex.: Sizenando"></label>
-          <label><span>Prazo</span><input id="taskDueDate" type="date"></label>
-        </div>
-        <label><span>Prioridade</span><select id="taskPriority"><option value="high">Alta</option><option value="medium">Média</option><option value="low">Baixa</option></select></label>
-        <div class="modal-actions"><button class="secondary-button modal-cancel" type="button">Cancelar</button><button class="primary-button" type="submit">Adicionar tarefa</button></div>
-      </form>
-    </div>
-  </div>
-
-  <div class="modal" id="expenseModal" aria-hidden="true">
-    <div class="modal-dialog">
-      <div class="modal-head"><div><p class="eyebrow">Orçamento</p><h3>Adicionar despesa</h3></div><button class="modal-close" type="button">×</button></div>
-      <form id="expenseForm" class="modal-form">
-        <label><span>Descrição</span><input id="expenseName" required></label>
-        <div class="form-grid">
-          <label><span>Categoria</span><select id="expenseCategory"><option>Alimentação</option><option>Decoração</option><option>Local</option><option>Lembrancinhas</option><option>Fotografia</option><option>Outros</option></select></label>
-          <label><span>Valor</span><input id="expenseAmount" type="number" min="0" step="0.01" required></label>
-        </div>
-        <div class="modal-actions"><button class="secondary-button modal-cancel" type="button">Cancelar</button><button class="primary-button" type="submit">Salvar despesa</button></div>
-      </form>
-    </div>
-  </div>
-
-  <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <script type="module" src="./assets/js/admin-auth.js"></script>
   <script type="module" src="./assets/js/admin.js"></script>
-  <script type="module" src="./assets/js/admin-gifts-firestore.js"></script>
 </body>
 </html>
