@@ -1,31 +1,36 @@
 import {
-  addDoc,
-  collection,
-  serverTimestamp
+  doc,
+  getDoc,
+  serverTimestamp,
+  setDoc
 } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 
 import { db } from "./firebase-config.js";
 
 console.log("[CONFIRMAÇÃO] Script carregado.");
+console.log("[CONFIRMAÇÃO] Projeto ativo: cha-da-iuna");
 console.log("[CONFIRMAÇÃO] Firestore disponível:", Boolean(db));
 
 const form = document.querySelector("#rsvpForm");
 const feedback = document.querySelector("#feedback");
 const submitButton = document.querySelector("#submitButton");
 
+const lookupForm = document.querySelector("#lookupForm");
+const lookupCode = document.querySelector("#lookupCode");
+const lookupFeedback = document.querySelector("#lookupFeedback");
+
 if (!form) {
-  console.error("[CONFIRMAÇÃO] Formulário #rsvpForm não encontrado.");
-  throw new Error("O formulário de confirmação não foi encontrado no HTML.");
+  throw new Error("O formulário #rsvpForm não foi encontrado.");
 }
 
-function showFeedback(message = "", type = "") {
-  if (!feedback) return;
+function showFeedback(element, message = "", type = "") {
+  if (!element) return;
 
-  feedback.textContent = message;
-  feedback.className = "form-feedback";
+  element.textContent = message;
+  element.className = "form-feedback";
 
   if (type) {
-    feedback.classList.add(`is-${type}`);
+    element.classList.add(`is-${type}`);
   }
 }
 
@@ -39,7 +44,9 @@ function getElement(selector) {
 
 function getValue(selector, fallback = "") {
   const element = getElement(selector);
-  return element ? String(element.value ?? "").trim() : fallback;
+  return element
+    ? String(element.value ?? "").trim()
+    : fallback;
 }
 
 function getNumber(selector, fallback = 0) {
@@ -58,17 +65,20 @@ function getCheckedValue(name) {
   )?.value || "";
 }
 
-function isChecked(selector) {
-  return Boolean(getElement(selector)?.checked);
-}
-
 function createProtocol() {
-  const code = crypto.randomUUID()
+  const randomPart = crypto.randomUUID()
     .replaceAll("-", "")
-    .slice(0, 6)
+    .slice(0, 8)
     .toUpperCase();
 
-  return `IUNA-${code}`;
+  return `IUNA-${randomPart}`;
+}
+
+function normalizeProtocol(value = "") {
+  return String(value)
+    .trim()
+    .toUpperCase()
+    .replace(/\s+/g, "");
 }
 
 function validate(data) {
@@ -86,7 +96,9 @@ function validate(data) {
 
   if (data.event !== "nao-vou") {
     if (data.people < 1 || data.people > 15) {
-      throw new Error("Informe o total de pessoas entre 1 e 15.");
+      throw new Error(
+        "Informe o total de pessoas entre 1 e 15."
+      );
     }
 
     if (data.children > data.people) {
@@ -96,29 +108,26 @@ function validate(data) {
     }
   }
 
-  const consentElement = getElement("#consent");
-
-  if (consentElement && !data.consent) {
+  if (!data.consent) {
     throw new Error(
       "Autorize o uso dos dados para a organização."
     );
   }
 }
 
-function buildPayload() {
+function buildPayload(protocol) {
   const event = getCheckedValue("event");
   const declined = event === "nao-vou";
   const name = getValue("#name");
   const phone = getValue("#phone");
-  const phoneDigits = onlyDigits(phone);
 
   return {
-    protocol: createProtocol(),
+    protocol,
     editToken: crypto.randomUUID(),
     name,
     nameSearch: name.toLowerCase(),
     phone,
-    phoneDigits,
+    phoneDigits: onlyDigits(phone),
     email: getValue("#email").toLowerCase(),
     event,
     status: declined ? "declined" : "confirmed",
@@ -129,9 +138,7 @@ function buildPayload() {
     city: declined ? "" : getValue("#city"),
     dietary: declined ? "" : getValue("#dietary"),
     message: getValue("#message"),
-    consent: getElement("#consent")
-      ? isChecked("#consent")
-      : true,
+    consent: Boolean(getElement("#consent")?.checked),
     source: "site",
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp()
@@ -143,7 +150,7 @@ function showSuccess(data) {
   const successSection = getElement("#success");
   const successTitle = getElement("#successTitle");
   const successText = getElement("#successText");
-  const protocol = getElement("#protocol");
+  const protocolElement = getElement("#protocol");
 
   if (confirmationArea) {
     confirmationArea.hidden = true;
@@ -164,75 +171,73 @@ function showSuccess(data) {
     successText.textContent =
       data.status === "declined"
         ? "Sentiremos sua falta, mas agradecemos por avisar."
-        : "Obrigado por fazer parte deste momento tão especial.";
+        : "Obrigado por fazer parte deste momento tão especial. Guarde o protocolo abaixo para consultar sua confirmação.";
   }
 
-  if (protocol) {
-    protocol.textContent = data.protocol;
+  if (protocolElement) {
+    protocolElement.textContent = data.protocol;
   }
 
-  showFeedback(
-    `Resposta enviada com sucesso. Protocolo: ${data.protocol}`,
-    "success"
-  );
+  successSection?.scrollIntoView({
+    behavior: "smooth",
+    block: "start"
+  });
 }
 
 form.addEventListener("submit", async event => {
   event.preventDefault();
-  showFeedback("");
 
-  console.log("[CONFIRMAÇÃO] Formulário enviado.");
+  showFeedback(feedback, "");
 
   try {
-    const data = buildPayload();
-
-    console.log("[CONFIRMAÇÃO] Dados preparados:", {
-      ...data,
-      editToken: "[protegido]"
-    });
+    const protocol = createProtocol();
+    const data = buildPayload(protocol);
 
     validate(data);
 
-    if (submitButton) {
-      submitButton.disabled = true;
-      submitButton.textContent = "Enviando para o Firebase...";
-    }
+    submitButton.disabled = true;
+    submitButton.textContent = "Confirmando presença...";
 
     console.log(
-      "[CONFIRMAÇÃO] Salvando em:",
-      "iuna-e113d / rsvps"
+      "[CONFIRMAÇÃO] Gravando:",
+      `cha-da-iuna / rsvps / ${protocol}`
     );
 
-    const documentReference = await addDoc(
-      collection(db, "rsvps"),
+    await setDoc(
+      doc(db, "rsvps", protocol),
       data
     );
 
     console.log(
-      "[CONFIRMAÇÃO] Documento salvo com sucesso:",
-      documentReference.id
+      "[CONFIRMAÇÃO] Presença gravada:",
+      protocol
+    );
+
+    showFeedback(
+      feedback,
+      `Presença registrada. Seu protocolo é ${protocol}.`,
+      "success"
     );
 
     showSuccess(data);
   } catch (error) {
-    console.error("[CONFIRMAÇÃO] Erro ao salvar:", {
-      code: error?.code,
-      message: error?.message,
-      stack: error?.stack
-    });
+    console.error(
+      "[CONFIRMAÇÃO] Erro ao gravar:",
+      error
+    );
 
     let message =
       error?.message ||
-      "Não foi possível salvar sua resposta.";
+      "Não foi possível registrar sua confirmação.";
 
     if (error?.code === "permission-denied") {
       message =
-        "O Firebase bloqueou a gravação. Verifique e publique as regras da coleção rsvps.";
+        "O Firebase bloqueou a gravação. Publique as regras atualizadas no projeto cha-da-iuna.";
     }
 
     if (error?.code === "failed-precondition") {
       message =
-        "O banco Firestore ainda não foi criado ou configurado no projeto iuna-e113d.";
+        "O Firestore ainda não foi criado no projeto cha-da-iuna.";
     }
 
     if (error?.code === "unavailable") {
@@ -240,14 +245,90 @@ form.addEventListener("submit", async event => {
         "Não foi possível acessar o Firebase. Verifique sua conexão.";
     }
 
-    showFeedback(message, "error");
+    showFeedback(feedback, message, "error");
   } finally {
-    if (submitButton) {
-      submitButton.disabled = false;
-      submitButton.textContent = "Confirmar minha resposta";
-    }
+    submitButton.disabled = false;
+    submitButton.textContent = "Confirmar minha resposta";
   }
 });
+
+if (lookupForm) {
+  lookupForm.addEventListener("submit", async event => {
+    event.preventDefault();
+
+    const protocol = normalizeProtocol(lookupCode?.value);
+
+    if (!protocol || !protocol.startsWith("IUNA-")) {
+      showFeedback(
+        lookupFeedback,
+        "Digite um protocolo válido, como IUNA-AB12CD34.",
+        "error"
+      );
+      return;
+    }
+
+    showFeedback(
+      lookupFeedback,
+      "Consultando confirmação..."
+    );
+
+    try {
+      const snapshot = await getDoc(
+        doc(db, "rsvps", protocol)
+      );
+
+      if (!snapshot.exists()) {
+        showFeedback(
+          lookupFeedback,
+          "Nenhuma confirmação foi encontrada com esse protocolo.",
+          "error"
+        );
+        return;
+      }
+
+      const data = snapshot.data();
+
+      const eventLabels = {
+        bage: "Bagé",
+        "porto-alegre": "Porto Alegre",
+        ambos: "Bagé e Porto Alegre",
+        "nao-vou": "Não poderá participar"
+      };
+
+      const statusText =
+        data.status === "declined"
+          ? "Resposta registrada: não poderá participar."
+          : `Presença confirmada para ${eventLabels[data.event] || "o evento"}.`;
+
+      const peopleText =
+        data.status === "declined"
+          ? ""
+          : ` Total de pessoas: ${data.people || 1}.`;
+
+      showFeedback(
+        lookupFeedback,
+        `${data.name}: ${statusText}${peopleText}`,
+        "success"
+      );
+    } catch (error) {
+      console.error(
+        "[CONSULTA] Erro:",
+        error
+      );
+
+      const message =
+        error?.code === "permission-denied"
+          ? "A consulta foi bloqueada pelas regras do Firebase. Publique as regras atualizadas."
+          : "Não foi possível consultar o protocolo agora.";
+
+      showFeedback(
+        lookupFeedback,
+        message,
+        "error"
+      );
+    }
+  });
+}
 
 const phoneInput = getElement("#phone");
 
@@ -263,15 +344,17 @@ const copyButton = getElement("#copyProtocol");
 
 if (copyButton) {
   copyButton.addEventListener("click", async () => {
-    const protocol = getElement("#protocol")?.textContent.trim();
+    const value = getElement("#protocol")
+      ?.textContent
+      .trim();
 
-    if (!protocol) return;
+    if (!value) return;
 
     try {
-      await navigator.clipboard.writeText(protocol);
+      await navigator.clipboard.writeText(value);
       copyButton.textContent = "Copiado!";
     } catch {
-      window.prompt("Copie seu protocolo:", protocol);
+      window.prompt("Copie seu protocolo:", value);
     }
   });
 }
