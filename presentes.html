@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Lista de Presentes | Chá da Iúna</title>
+
+  <meta
+    name="description"
+    content="Veja a lista completa de presentes do Chá da Iúna e escolha um item com carinho."
+  >
+  <meta name="theme-color" content="#7b5aa6">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700&display=swap"
+    rel="stylesheet"
+  >
+
+  <link rel="stylesheet" href="./assets/css/presentes.css">
+</head>
+
+<body>
+  <a class="skip-link" href="#giftList">Ir para a lista de presentes</a>
+
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="./index.html" aria-label="Voltar para o início">
+        <span class="brand-mark" aria-hidden="true">I</span>
+        <span>
+          <strong>Chá da Iúna</strong>
+          <small>lista de presentes</small>
+        </span>
+      </a>
+
+      <nav class="header-nav" id="headerNav" aria-label="Navegação principal">
+        <a href="./index.html">Início</a>
+        <a href="./confirmar-presenca.html">Confirmar presença</a>
+        <a class="active" href="./presentes.html">Presentes</a>
+        <a href="./recadinhos.html">Recadinhos</a>
+        <a href="./galeria.html">Galeria</a>
+      </nav>
+
+      <button
+        class="menu-toggle"
+        id="menuToggle"
+        type="button"
+        aria-label="Abrir menu"
+        aria-expanded="false"
+      >
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="container hero-grid">
+        <div class="hero-copy">
+          <p class="eyebrow">Um presente cheio de carinho</p>
+          <h1>Lista de presentes da Iúna.</h1>
+
+          <p>
+            Escolhemos com cuidado alguns itens que serão muito úteis nos
+            primeiros meses da nossa pequena. Fique à vontade para escolher
+            aquele que combina mais com você.
+          </p>
+
+          <div class="hero-highlights">
+            <span>♡ Escolha apenas o que fizer sentido para você</span>
+            <span>♡ Não é necessário informar valor</span>
+            <span>♡ Sua escolha fica registrada para os pais</span>
+          </div>
+        </div>
+
+        <div class="hero-art" aria-hidden="true">
+          <div class="gift-box">
+            <span class="gift-ribbon"></span>
+            <span class="gift-bow">♡</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section gifts-section">
+      <div class="container">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Lista completa</p>
+            <h2>Escolha um mimo para a Iúna</h2>
+            <p>
+              Use a busca e os filtros para encontrar os itens por categoria.
+            </p>
+          </div>
+
+          <div class="gift-summary">
+            <span>
+              <strong id="totalGiftCount">0</strong>
+              itens
+            </span>
+            <span>
+              <strong id="availableGiftCount">0</strong>
+              disponíveis
+            </span>
+          </div>
+        </div>
+
+        <div class="filters-card">
+          <div class="search-field">
+            <label for="giftSearch">Buscar presente</label>
+            <div class="search-wrap">
+              <span aria-hidden="true">⌕</span>
+              <input
+                id="giftSearch"
+                type="search"
+                placeholder="Ex.: fralda, roupa, higiene..."
+                autocomplete="off"
+              >
+            </div>
+          </div>
+
+          <div class="filter-field">
+            <label for="categoryFilter">Categoria</label>
+            <select id="categoryFilter">
+              <option value="">Todas as categorias</option>
+            </select>
+          </div>
+
+          <label class="availability-filter">
+            <input id="onlyAvailable" type="checkbox" checked>
+            <span>Mostrar apenas disponíveis</span>
+          </label>
+
+          <button class="clear-button" id="clearFilters" type="button">
+            Limpar filtros
+          </button>
+        </div>
+
+        <div
+          class="page-feedback"
+          id="pageFeedback"
+          role="status"
+          aria-live="polite"
+        ></div>
+
+        <div class="gift-grid" id="giftList" aria-live="polite">
+          <article class="gift-card skeleton-card">
+            <div class="skeleton skeleton-image"></div>
+            <div class="skeleton skeleton-line"></div>
+            <div class="skeleton skeleton-line short"></div>
+          </article>
+
+          <article class="gift-card skeleton-card">
+            <div class="skeleton skeleton-image"></div>
+            <div class="skeleton skeleton-line"></div>
+            <div class="skeleton skeleton-line short"></div>
+          </article>
+
+          <article class="gift-card skeleton-card">
+            <div class="skeleton skeleton-image"></div>
+            <div class="skeleton skeleton-line"></div>
+            <div class="skeleton skeleton-line short"></div>
+          </article>
+        </div>
+
+        <div class="empty-state" id="emptyState" hidden>
+          <span aria-hidden="true">♡</span>
+          <h3>Nenhum presente encontrado.</h3>
+          <p>Tente alterar a busca ou os filtros selecionados.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section how-section">
+      <div class="container">
+        <div class="how-heading">
+          <p class="eyebrow">Como funciona</p>
+          <h2>Escolher é bem simples</h2>
+        </div>
+
+        <div class="steps-grid">
+          <article>
+            <span>1</span>
+            <h3>Encontre um presente</h3>
+            <p>Veja a lista completa e escolha o item que desejar oferecer.</p>
+          </article>
+
+          <article>
+            <span>2</span>
+            <h3>Informe seus dados</h3>
+            <p>Preencha seu nome, telefone e a quantidade escolhida.</p>
+          </article>
+
+          <article>
+            <span>3</span>
+            <h3>Confirme sua escolha</h3>
+            <p>O item ficará reservado e os pais receberão a informação.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <dialog class="reservation-dialog" id="reservationDialog">
+    <form class="reservation-card" id="reservationForm" novalidate>
+      <button
+        class="dialog-close"
+        id="closeReservationDialog"
+        type="button"
+        aria-label="Fechar"
+      >
+        ×
+      </button>
+
+      <div class="selected-gift" id="selectedGiftPreview"></div>
+
+      <p class="eyebrow">Reservar presente</p>
+      <h2>Confirme sua escolha</h2>
+      <p class="dialog-intro">
+        Seus dados serão visualizados apenas pelos pais da Iúna.
+      </p>
+
+      <input id="selectedGiftId" type="hidden">
+
+      <div class="form-grid">
+        <div class="form-field form-field-full">
+          <label for="guestName">Seu nome *</label>
+          <input
+            id="guestName"
+            type="text"
+            maxlength="100"
+            autocomplete="name"
+            required
+          >
+          <p class="field-error" id="guestNameError"></p>
+        </div>
+
+        <div class="form-field">
+          <label for="guestPhone">WhatsApp *</label>
+          <input
+            id="guestPhone"
+            type="tel"
+            maxlength="20"
+            inputmode="tel"
+            autocomplete="tel"
+            placeholder="(00) 00000-0000"
+            required
+          >
+          <p class="field-error" id="guestPhoneError"></p>
+        </div>
+
+        <div class="form-field">
+          <label for="giftQuantity">Quantidade *</label>
+          <select id="giftQuantity" required></select>
+          <p class="field-error" id="giftQuantityError"></p>
+        </div>
+
+        <div class="form-field form-field-full">
+          <label for="guestNote">Observação</label>
+          <textarea
+            id="guestNote"
+            rows="3"
+            maxlength="300"
+            placeholder="Deixe uma informação para os pais, se desejar."
+          ></textarea>
+        </div>
+      </div>
+
+      <label class="consent-field">
+        <input id="reservationConsent" type="checkbox" required>
+        <span>
+          Confirmo que desejo reservar este presente para a Iúna. *
+        </span>
+      </label>
+      <p class="field-error" id="reservationConsentError"></p>
+
+      <div
+        class="form-feedback"
+        id="reservationFeedback"
+        role="status"
+        aria-live="polite"
+      ></div>
+
+      <button class="button button-primary button-full" type="submit">
+        <span class="button-text">Confirmar escolha</span>
+        <span class="button-loading" hidden>Confirmando...</span>
+      </button>
+    </form>
+  </dialog>
+
+  <dialog class="success-dialog" id="successDialog">
+    <div class="success-card">
+      <span class="success-icon" aria-hidden="true">♥</span>
+      <p class="eyebrow">Presente reservado</p>
+      <h2>Obrigado pelo carinho!</h2>
+      <p>
+        Sua escolha foi registrada e os pais da Iúna já poderão visualizá-la
+        na Área dos Pais.
+      </p>
+
+      <div class="success-actions">
+        <button class="button button-primary" id="closeSuccess" type="button">
+          Continuar vendo a lista
+        </button>
+
+        <a class="button button-secondary" href="./recadinhos.html">
+          Deixar um recadinho
+        </a>
+      </div>
+    </div>
+  </dialog>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <p>Feito com muito amor para a chegada da Iúna.</p>
+      <a href="./login.html">Área dos Pais</a>
+    </div>
+  </footer>
+
+  <script type="module" src="./assets/js/presentes.js"></script>
+</body>
+</html>
