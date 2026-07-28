@@ -16,6 +16,23 @@ const loading = document.querySelector("#adminLoading");
 const app = document.querySelector("#adminApp");
 const logoutButton = document.querySelector("#logoutButton");
 
+
+function getNormalizedField(data, expectedName) {
+  if (!data || typeof data !== "object") return undefined;
+
+  if (Object.prototype.hasOwnProperty.call(data, expectedName)) {
+    return data[expectedName];
+  }
+
+  const normalizedExpected = expectedName.trim().toLowerCase();
+
+  const matchingKey = Object.keys(data).find(
+    (key) => String(key).trim().toLowerCase() === normalizedExpected
+  );
+
+  return matchingKey ? data[matchingKey] : undefined;
+}
+
 function normalizeRole(value = "") {
   return String(value).trim().toLowerCase();
 }
@@ -27,29 +44,40 @@ function isAdminActive(value) {
     || String(value).trim().toLowerCase() === "ativo";
 }
 
+
 async function validateAdmin(user) {
   const adminRef = doc(db, "admins", user.uid);
   const snapshot = await getDoc(adminRef);
-  if (!snapshot.exists()) throw new Error("ADMIN_NOT_FOUND");
+
+  if (!snapshot.exists()) {
+    throw new Error("ADMIN_NOT_FOUND");
+  }
 
   const data = snapshot.data();
-  const role = normalizeRole(data.role);
-  const active = isAdminActive(data.active);
+  const rawActive = getNormalizedField(data, "active");
+  const rawRole = getNormalizedField(data, "role");
+  const active = isAdminActive(rawActive);
+  const role = normalizeRole(rawRole);
 
   console.log("[ADMIN AUTH] Verificação administrativa", {
     uid: user.uid,
     projectId: db.app.options.projectId,
-    activeRecebido: data.active,
+    chavesRecebidas: Object.keys(data),
+    activeRecebido: rawActive,
     activeInterpretado: active,
-    roleRecebida: data.role,
+    roleRecebida: rawRole,
     roleInterpretada: role
   });
 
   if (!active) throw new Error("ADMIN_INACTIVE");
-  if (!["owner", "admin", "editor"].includes(role)) throw new Error("ADMIN_ROLE_INVALID");
+  if (!["owner", "admin", "editor"].includes(role)) {
+    throw new Error("ADMIN_ROLE_INVALID");
+  }
 
   try {
-    await updateDoc(adminRef, { lastLoginAt: serverTimestamp() });
+    await updateDoc(adminRef, {
+      lastLoginAt: serverTimestamp()
+    });
   } catch (error) {
     console.warn("[ADMIN AUTH] Não foi possível atualizar lastLoginAt:", error);
   }
@@ -59,7 +87,12 @@ async function validateAdmin(user) {
 
 function exposeAdminSession(user, adminData) {
   window.__IUNA_ADMIN__ = { user, admin: adminData };
-  window.dispatchEvent(new CustomEvent("iuna-admin-ready", { detail: window.__IUNA_ADMIN__ }));
+
+  window.dispatchEvent(
+    new CustomEvent("iuna-admin-ready", {
+      detail: window.__IUNA_ADMIN__
+    })
+  );
 }
 
 onAuthStateChanged(auth, async (user) => {
@@ -70,11 +103,14 @@ onAuthStateChanged(auth, async (user) => {
 
   try {
     const adminData = await validateAdmin(user);
+
     if (loading) loading.hidden = true;
     if (app) app.hidden = false;
+
     exposeAdminSession(user, adminData);
   } catch (error) {
     console.error("[ADMIN AUTH] Acesso recusado:", error);
+
     await signOut(auth).catch(() => {});
     window.location.replace(`./login.html?erro=${encodeURIComponent(error.message)}`);
   }
@@ -82,6 +118,7 @@ onAuthStateChanged(auth, async (user) => {
 
 logoutButton?.addEventListener("click", async () => {
   logoutButton.disabled = true;
+
   try {
     await signOut(auth);
     window.location.replace("./login.html");

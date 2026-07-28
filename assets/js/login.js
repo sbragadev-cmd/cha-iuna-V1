@@ -21,6 +21,7 @@ const passwordInput = document.querySelector("#password");
 const rememberInput = document.querySelector("#rememberMe");
 const passwordToggle = document.querySelector("#passwordToggle");
 const feedback = document.querySelector("#loginFeedback");
+
 const forgotPasswordButton = document.querySelector("#forgotPasswordButton");
 const resetDialog = document.querySelector("#resetDialog");
 const resetForm = document.querySelector("#resetForm");
@@ -34,6 +35,23 @@ function normalizeText(value = "") {
   return String(value).trim();
 }
 
+
+function getNormalizedField(data, expectedName) {
+  if (!data || typeof data !== "object") return undefined;
+
+  if (Object.prototype.hasOwnProperty.call(data, expectedName)) {
+    return data[expectedName];
+  }
+
+  const normalizedExpected = expectedName.trim().toLowerCase();
+
+  const matchingKey = Object.keys(data).find(
+    (key) => String(key).trim().toLowerCase() === normalizedExpected
+  );
+
+  return matchingKey ? data[matchingKey] : undefined;
+}
+
 function normalizeRole(value = "") {
   return String(value).trim().toLowerCase();
 }
@@ -45,9 +63,11 @@ function isAdminActive(value) {
     || String(value).trim().toLowerCase() === "ativo";
 }
 
+
 function setFieldError(fieldId, message = "") {
   const field = document.querySelector(`#${fieldId}`);
   const error = document.querySelector(`#${fieldId}Error`);
+
   if (field) field.setAttribute("aria-invalid", message ? "true" : "false");
   if (error) error.textContent = message;
 }
@@ -76,64 +96,81 @@ function translateAuthError(error) {
     "auth/wrong-password": "E-mail ou senha incorretos.",
     "auth/invalid-email": "Informe um endereço de e-mail válido.",
     "auth/user-disabled": "Este usuário está desativado.",
-    "auth/too-many-requests": "Muitas tentativas foram realizadas. Aguarde alguns minutos.",
-    "auth/network-request-failed": "Não foi possível conectar. Verifique sua internet.",
+    "auth/too-many-requests":
+      "Muitas tentativas foram realizadas. Aguarde alguns minutos.",
+    "auth/network-request-failed":
+      "Não foi possível conectar. Verifique sua internet.",
     "auth/missing-password": "Digite sua senha."
   };
-  return messages[error?.code] || "Não foi possível entrar agora. Tente novamente em instantes.";
+
+  return messages[error?.code]
+    || "Não foi possível entrar agora. Tente novamente em instantes.";
 }
 
 async function validateAdminUser(user) {
-  const snapshot = await getDoc(doc(db, "admins", user.uid));
+  const adminRef = doc(db, "admins", user.uid);
+  const snapshot = await getDoc(adminRef);
 
   if (!snapshot.exists()) {
     const error = new Error("ADMIN_NOT_FOUND");
-    error.details = { uid: user.uid, email: user.email, projectId: db.app.options.projectId };
+    error.details = {
+      uid: user.uid,
+      email: user.email,
+      projectId: db.app.options.projectId
+    };
     throw error;
   }
 
   const adminData = snapshot.data();
-  const role = normalizeRole(adminData.role);
-  const active = isAdminActive(adminData.active);
+  const rawActive = getNormalizedField(adminData, "active");
+  const rawRole = getNormalizedField(adminData, "role");
+  const active = isAdminActive(rawActive);
+  const role = normalizeRole(rawRole);
+  const allowedRoles = ["owner", "admin", "editor"];
 
   console.log("[LOGIN] Verificação administrativa", {
     uid: user.uid,
     projectId: db.app.options.projectId,
     documentPath: `admins/${user.uid}`,
-    activeRecebido: adminData.active,
+    chavesRecebidas: Object.keys(adminData),
+    activeRecebido: rawActive,
     activeInterpretado: active,
-    roleRecebida: adminData.role,
+    roleRecebida: rawRole,
     roleInterpretada: role
   });
 
-  if (!["owner", "admin", "editor"].includes(role)) {
-    const error = new Error("ADMIN_ROLE_INVALID");
-    error.details = { role: adminData.role };
-    throw error;
-  }
-
   if (!active) {
     const error = new Error("ADMIN_INACTIVE");
-    error.details = { active: adminData.active };
+    error.details = { active: rawActive, keys: Object.keys(adminData) };
     throw error;
   }
 
-  return { ...adminData, role, active: true };
+  if (!allowedRoles.includes(role)) {
+    const error = new Error("ADMIN_ROLE_INVALID");
+    error.details = { role: rawRole, keys: Object.keys(adminData) };
+    throw error;
+  }
+
+  return { ...adminData, active: true, role };
 }
 
 function validateLoginForm() {
   clearLoginErrors();
+
   const email = normalizeText(emailInput.value).toLowerCase();
   const password = passwordInput.value;
   let valid = true;
+
   if (!isValidEmail(email)) {
     setFieldError("email", "Informe um e-mail válido.");
     valid = false;
   }
+
   if (password.length < 6) {
     setFieldError("password", "Digite uma senha com pelo menos 6 caracteres.");
     valid = false;
   }
+
   return valid;
 }
 
@@ -141,6 +178,7 @@ function setSubmitting(formElement, submitting) {
   const button = formElement.querySelector('button[type="submit"]');
   const text = button?.querySelector(".button-text");
   const loading = button?.querySelector(".button-loading");
+
   if (button) button.disabled = submitting;
   if (text) text.hidden = submitting;
   if (loading) loading.hidden = !submitting;
@@ -148,16 +186,23 @@ function setSubmitting(formElement, submitting) {
 
 async function handleLogin(event) {
   event.preventDefault();
+
   if (!validateLoginForm()) {
     feedback.textContent = "Revise os campos destacados.";
-    feedback.classList.add("is-error");
+    feedback.className = "form-feedback is-error";
     return;
   }
 
   setSubmitting(form, true);
 
   try {
-    await setPersistence(auth, rememberInput.checked ? browserLocalPersistence : browserSessionPersistence);
+    await setPersistence(
+      auth,
+      rememberInput.checked
+        ? browserLocalPersistence
+        : browserSessionPersistence
+    );
+
     const credential = await signInWithEmailAndPassword(
       auth,
       normalizeText(emailInput.value).toLowerCase(),
@@ -177,11 +222,14 @@ async function handleLogin(event) {
     }
 
     if (error?.message === "ADMIN_NOT_FOUND") {
-      feedback.textContent = "O usuário foi autenticado, mas o documento admins/UID não foi encontrado.";
+      feedback.textContent =
+        "O usuário foi autenticado, mas o documento admins/UID não foi encontrado.";
     } else if (error?.message === "ADMIN_INACTIVE") {
-      feedback.textContent = "O cadastro administrativo foi encontrado, mas está marcado como inativo.";
+      feedback.textContent =
+        "O cadastro administrativo foi encontrado, mas está marcado como inativo.";
     } else if (error?.message === "ADMIN_ROLE_INVALID") {
-      feedback.textContent = "A função administrativa precisa ser owner, admin ou editor.";
+      feedback.textContent =
+        "A função administrativa precisa ser owner, admin ou editor.";
     } else {
       feedback.textContent = translateAuthError(error);
     }
@@ -194,11 +242,17 @@ async function handleLogin(event) {
 
 function togglePasswordVisibility() {
   const visible = passwordInput.type === "text";
+
   passwordInput.type = visible ? "password" : "text";
   passwordToggle.setAttribute("aria-pressed", String(!visible));
-  passwordToggle.setAttribute("aria-label", visible ? "Mostrar senha" : "Ocultar senha");
+  passwordToggle.setAttribute(
+    "aria-label",
+    visible ? "Mostrar senha" : "Ocultar senha"
+  );
+
   const openText = passwordToggle.querySelector(".eye-open");
   const closedText = passwordToggle.querySelector(".eye-closed");
+
   if (openText) openText.hidden = !visible;
   if (closedText) closedText.hidden = visible;
 }
@@ -219,15 +273,20 @@ function closeReset() {
 async function handleResetPassword(event) {
   event.preventDefault();
   clearResetErrors();
+
   const email = normalizeText(resetEmailInput.value).toLowerCase();
+
   if (!isValidEmail(email)) {
     setFieldError("resetEmail", "Informe um e-mail válido.");
     return;
   }
+
   setSubmitting(resetForm, true);
+
   try {
     await sendPasswordResetEmail(auth, email);
-    resetFeedback.textContent = "Enviamos o link de recuperação. Verifique também a pasta de spam.";
+    resetFeedback.textContent =
+      "Enviamos o link de recuperação. Verifique também a pasta de spam.";
     resetFeedback.className = "form-feedback is-success";
   } catch (error) {
     console.error("[LOGIN] Erro ao enviar recuperação:", error);
@@ -241,7 +300,9 @@ async function handleResetPassword(event) {
 onAuthStateChanged(auth, async (user) => {
   if (!checkingInitialSession) return;
   checkingInitialSession = false;
+
   if (!user) return;
+
   try {
     await validateAdminUser(user);
     window.location.replace("./admin.html");
@@ -256,4 +317,7 @@ passwordToggle?.addEventListener("click", togglePasswordVisibility);
 forgotPasswordButton?.addEventListener("click", openResetDialog);
 closeResetDialog?.addEventListener("click", closeReset);
 resetForm?.addEventListener("submit", handleResetPassword);
-resetDialog?.addEventListener("close", () => document.body.classList.remove("modal-open"));
+
+resetDialog?.addEventListener("close", () => {
+  document.body.classList.remove("modal-open");
+});
