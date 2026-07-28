@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Recadinhos para a Iúna | Chá da Iúna</title>
+
+  <meta
+    name="description"
+    content="Escreva um recadinho cheio de carinho para a Iúna."
+  >
+  <meta name="theme-color" content="#7b5aa6">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap"
+    rel="stylesheet"
+  >
+
+  <link rel="stylesheet" href="./assets/css/messages.css">
+</head>
+
+<body>
+  <a class="skip-link" href="#messageForm">Ir para o formulário</a>
+
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="./index.html" aria-label="Voltar para o início">
+        <span class="brand-mark" aria-hidden="true">I</span>
+        <span>
+          <strong>Chá da Iúna</strong>
+          <small>recadinhos</small>
+        </span>
+      </a>
+
+      <nav class="header-nav" aria-label="Navegação principal">
+        <a href="./index.html">Início</a>
+        <a href="./confirmar-presenca.html">Confirmar presença</a>
+        <a href="./presentes.html">Presentes</a>
+        <a class="active" href="./recadinhos.html">Recadinhos</a>
+        <a href="./galeria.html">Galeria</a>
+      </nav>
+
+      <button
+        class="menu-toggle"
+        id="menuToggle"
+        type="button"
+        aria-label="Abrir menu"
+        aria-expanded="false"
+      >
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="container hero-grid">
+        <div class="hero-copy">
+          <p class="eyebrow">Palavras que ficam para sempre</p>
+
+          <h1>Deixe um recadinho para a Iúna.</h1>
+
+          <p>
+            Um dia ela poderá conhecer cada palavra e descobrir o quanto foi
+            esperada, celebrada e amada desde antes de nascer.
+          </p>
+
+          <div class="hero-notes">
+            <span>♡ Escreva com carinho</span>
+            <span>♡ Seu recadinho será revisado pelos pais</span>
+            <span>♡ Depois de aprovado, poderá aparecer no mural</span>
+          </div>
+        </div>
+
+        <div class="hero-art" aria-hidden="true">
+          <div class="letter-card">
+            <span class="letter-heart">♥</span>
+            <strong>Para a Iúna</strong>
+            <small>com todo o nosso amor</small>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section write-section">
+      <div class="container write-layout">
+        <article class="form-card">
+          <div class="section-heading">
+            <p class="eyebrow">Escrever recadinho</p>
+            <h2>Conte um pouco do que deseja para a Iúna.</h2>
+            <p>
+              Pode ser uma mensagem de boas-vindas, um desejo para o futuro,
+              uma lembrança ou algumas palavras de carinho.
+            </p>
+          </div>
+
+          <form id="messageForm" novalidate>
+            <div class="form-grid">
+              <div class="form-field">
+                <label for="name">Seu nome *</label>
+                <input
+                  id="name"
+                  name="name"
+                  type="text"
+                  maxlength="100"
+                  autocomplete="name"
+                  required
+                >
+                <p class="field-error" id="nameError"></p>
+              </div>
+
+              <div class="form-field">
+                <label for="relationship">Relação com a família</label>
+                <select id="relationship" name="relationship">
+                  <option value="">Selecione</option>
+                  <option value="Família">Família</option>
+                  <option value="Amigo ou amiga">Amigo ou amiga</option>
+                  <option value="Trabalho">Trabalho</option>
+                  <option value="Capoeira">Capoeira</option>
+                  <option value="Outro">Outro</option>
+                </select>
+              </div>
+
+              <div class="form-field form-field-full">
+                <div class="label-row">
+                  <label for="message">Seu recadinho *</label>
+                  <span id="messageCounter">0/1000</span>
+                </div>
+
+                <textarea
+                  id="message"
+                  name="message"
+                  rows="8"
+                  maxlength="1000"
+                  placeholder="Iúna, desejamos que sua vida seja..."
+                  required
+                ></textarea>
+
+                <p class="field-error" id="messageError"></p>
+              </div>
+            </div>
+
+            <label class="consent-field">
+              <input id="consent" type="checkbox" required>
+              <span>
+                Autorizo que este recadinho seja revisado e, após aprovação,
+                publicado no site do Chá da Iúna. *
+              </span>
+            </label>
+
+            <p class="field-error" id="consentError"></p>
+
+            <div
+              class="form-feedback"
+              id="formFeedback"
+              role="status"
+              aria-live="polite"
+            ></div>
+
+            <button class="button button-primary button-full" type="submit">
+              <span class="button-text">Enviar recadinho</span>
+              <span class="button-loading" hidden>Enviando...</span>
+            </button>
+          </form>
+        </article>
+
+        <aside class="aside-card">
+          <span class="aside-icon" aria-hidden="true">♡</span>
+          <h2>Uma lembrança para o futuro</h2>
+
+          <p>
+            Cada mensagem poderá fazer parte da história da Iúna e guardar um
+            pedacinho de quem esteve celebrando sua chegada.
+          </p>
+
+          <div class="quote-card">
+            <p>
+              “Que você cresça cercada de afeto, coragem, alegria e pessoas
+              que façam seu coração se sentir em casa.”
+            </p>
+          </div>
+
+          <ul>
+            <li>O recadinho não aparece imediatamente.</li>
+            <li>Os pais revisam antes da publicação.</li>
+            <li>Mensagens ofensivas ou inadequadas não serão publicadas.</li>
+          </ul>
+        </aside>
+      </div>
+    </section>
+
+    <section class="section wall-section">
+      <div class="container">
+        <div class="wall-heading">
+          <div>
+            <p class="eyebrow">Mural de carinho</p>
+            <h2>Recadinhos já aprovados</h2>
+            <p>
+              Algumas mensagens deixadas por quem já está celebrando a chegada
+              da Iúna.
+            </p>
+          </div>
+
+          <span class="wall-count" id="wallCount">0 recadinhos</span>
+        </div>
+
+        <div class="messages-grid" id="messagesGrid" aria-live="polite">
+          <article class="message-card loading-card">
+            <div class="skeleton skeleton-line"></div>
+            <div class="skeleton skeleton-line"></div>
+            <div class="skeleton skeleton-line short"></div>
+          </article>
+
+          <article class="message-card loading-card">
+            <div class="skeleton skeleton-line"></div>
+            <div class="skeleton skeleton-line"></div>
+            <div class="skeleton skeleton-line short"></div>
+          </article>
+
+          <article class="message-card loading-card">
+            <div class="skeleton skeleton-line"></div>
+            <div class="skeleton skeleton-line"></div>
+            <div class="skeleton skeleton-line short"></div>
+          </article>
+        </div>
+
+        <div class="empty-state" id="emptyState" hidden>
+          <span aria-hidden="true">♡</span>
+          <h3>Os primeiros recadinhos aparecerão aqui.</h3>
+          <p>
+            Seja uma das primeiras pessoas a deixar uma mensagem para a Iúna.
+          </p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <dialog class="success-dialog" id="successDialog">
+    <div class="success-card">
+      <span class="success-icon" aria-hidden="true">♥</span>
+      <p class="eyebrow">Recadinho recebido</p>
+      <h2>Obrigado por deixar tanto carinho.</h2>
+      <p>
+        Sua mensagem foi enviada para os pais e aparecerá no mural depois de
+        ser aprovada.
+      </p>
+
+      <div class="success-actions">
+        <button class="button button-primary" id="writeAnother" type="button">
+          Escrever outro recadinho
+        </button>
+
+        <a class="button button-secondary" href="./index.html">
+          Voltar ao início
+        </a>
+      </div>
+    </div>
+  </dialog>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <p>Feito com muito amor para a chegada da Iúna.</p>
+      <a href="./login.html">Área dos Pais</a>
+    </div>
+  </footer>
+
+  <script type="module" src="./assets/js/messages.js"></script>
+</body>
+</html>
