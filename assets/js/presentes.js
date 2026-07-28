@@ -6,7 +6,6 @@ import {
   doc,
   increment,
   onSnapshot,
-  orderBy,
   query,
   runTransaction,
   serverTimestamp,
@@ -387,20 +386,39 @@ async function submitReservation(event) {
 }
 
 function startGiftsListener() {
-  const giftsQuery = query(
-    collection(db, "gifts"),
-    where("active", "==", true),
-    orderBy("category"),
-    orderBy("name")
-  );
+const giftsQuery = query(
+  collection(db, "gifts"),
+  where("active", "==", true)
+);
 
   unsubscribe = onSnapshot(
     giftsQuery,
     (snapshot) => {
-      gifts = snapshot.docs.map((document) => ({
-        id: document.id,
-        ...document.data()
-      }));
+      gifts = snapshot.docs
+  .map((document) => ({
+    id: document.id,
+    ...document.data()
+  }))
+  .sort((giftA, giftB) => {
+    const categoryA = String(giftA.category || "");
+    const categoryB = String(giftB.category || "");
+
+    const categoryComparison = categoryA.localeCompare(
+      categoryB,
+      "pt-BR",
+      { sensitivity: "base" }
+    );
+
+    if (categoryComparison !== 0) {
+      return categoryComparison;
+    }
+
+    return String(giftA.name || "").localeCompare(
+      String(giftB.name || ""),
+      "pt-BR",
+      { sensitivity: "base" }
+    );
+  });
 
       pageFeedback.textContent = "";
       updateSummary();
