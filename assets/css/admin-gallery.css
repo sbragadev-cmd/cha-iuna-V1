@@ -1,0 +1,38 @@
+/* Galeria editável */
+.gallery-admin-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:20px}
+.gallery-admin-summary article{padding:20px;border:1px solid rgba(91,62,127,.12);border-radius:20px;background:#fff;box-shadow:0 12px 28px rgba(63,43,81,.06)}
+.gallery-admin-summary small,.gallery-admin-summary strong{display:block}
+.gallery-admin-summary small{color:#83788a;font-size:.73rem;font-weight:600}
+.gallery-admin-summary strong{margin-top:7px;color:#5b3e7f;font-family:"Playfair Display",serif;font-size:1.7rem}
+.gallery-filter-bar{grid-template-columns:minmax(260px,1fr) minmax(180px,230px) minmax(170px,220px)}
+.gallery-editor-card{overflow:hidden;border:1px solid rgba(91,62,127,.12);border-radius:24px;background:#fff;box-shadow:0 16px 38px rgba(66,44,84,.08)}
+.gallery-editor-card.pending{border-color:rgba(220,166,59,.4)}
+.gallery-editor-card .gallery-admin-image{position:relative;display:block;width:100%;height:260px;padding:0;overflow:hidden;border:0;background:#f4eef8;cursor:pointer}
+.gallery-editor-card .gallery-admin-image img{width:100%;height:100%;object-fit:cover;transition:transform .22s ease}
+.gallery-editor-card .gallery-admin-image:hover img{transform:scale(1.025)}
+.gallery-card-placeholder{display:grid;width:100%;height:100%;color:#8c70a8;font-size:2rem;place-items:center}
+.gallery-featured-badge{position:absolute;top:14px;left:14px;padding:7px 10px;border-radius:999px;color:#5c4210;background:rgba(255,236,170,.95);font-size:.68rem;font-weight:800}
+.gallery-image-edit-hint{position:absolute;right:14px;bottom:14px;padding:8px 11px;border-radius:999px;color:#fff;background:rgba(57,39,68,.78);font-size:.68rem;font-weight:700;opacity:0;transform:translateY(5px);transition:.18s ease}
+.gallery-admin-image:hover .gallery-image-edit-hint{opacity:1;transform:translateY(0)}
+.gallery-editor-card .gallery-admin-content{padding:20px}
+.gallery-status-row{display:flex;flex-wrap:wrap;gap:7px}
+.status-pill.published{color:#336842;background:#e1f2e5}
+.gallery-order-badge{color:#887b8d;font-size:.65rem;white-space:nowrap}
+.gallery-card-caption{min-height:42px;margin:12px 0 16px;color:#716776;font-size:.77rem;line-height:1.55}
+.gallery-card-meta{display:grid;margin:0;padding:14px;border-radius:16px;gap:11px;background:#faf7fb;grid-template-columns:repeat(2,minmax(0,1fr))}
+.gallery-card-meta dt{color:#978b9b;font-size:.6rem;font-weight:800;text-transform:uppercase}
+.gallery-card-meta dd{margin:3px 0 0;overflow:hidden;color:#564c5b;font-size:.7rem;font-weight:650;text-overflow:ellipsis;white-space:nowrap}
+.gallery-card-actions{margin-top:17px;flex-wrap:wrap}
+.gallery-dialog{width:min(1180px,calc(100vw - 30px))}
+.gallery-dialog-shell{width:100%;max-width:none}
+.gallery-edit-layout{display:grid;margin-top:22px;gap:28px;grid-template-columns:minmax(290px,.8fr) minmax(0,1.2fr)}
+.gallery-edit-preview{display:grid;min-height:390px;overflow:hidden;border:1px dashed rgba(91,62,127,.28);border-radius:22px;background:linear-gradient(145deg,#faf6fc,#f1e9f6);place-items:center}
+.gallery-edit-preview img{width:100%;height:100%;min-height:390px;max-height:560px;object-fit:contain;background:#f4eff6}
+.gallery-edit-placeholder{display:grid;padding:30px;color:#89788f;justify-items:center;text-align:center}
+.gallery-edit-placeholder span{display:grid;width:66px;height:66px;margin-bottom:13px;border-radius:22px;color:#765193;background:#fff;font-size:1.4rem;place-items:center}
+.gallery-image-actions{display:flex;margin-top:12px;gap:9px}
+.gallery-file-button{cursor:pointer}
+.gallery-image-help{display:block;margin-top:9px;color:#8e838f;font-size:.65rem}
+.gallery-dialog-actions{display:flex;margin-top:22px;justify-content:flex-end;gap:10px}
+@media(max-width:1050px){.gallery-admin-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.gallery-filter-bar{grid-template-columns:1fr 1fr}.gallery-filter-bar input{grid-column:1/-1}.gallery-edit-layout{grid-template-columns:1fr}}
+@media(max-width:640px){.gallery-admin-summary{grid-template-columns:1fr 1fr}.gallery-filter-bar{grid-template-columns:1fr}.gallery-filter-bar input{grid-column:auto}.gallery-editor-card .gallery-admin-image{height:230px}.gallery-card-meta{grid-template-columns:1fr}.gallery-image-actions,.gallery-dialog-actions{flex-direction:column}}

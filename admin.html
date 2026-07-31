@@ -21,6 +21,7 @@
   >
 
   <link rel="stylesheet" href="./assets/css/admin.css">
+  <link rel="stylesheet" href="./assets/css/admin-gallery.css">
 </head>
 
 <body>
@@ -385,15 +386,48 @@
         <section class="admin-section" id="section-gallery">
           <div class="section-toolbar">
             <div>
-              <p class="eyebrow">Moderação</p>
-              <h2>Fotos enviadas</h2>
-              <p>
-                Aprove ou recuse as imagens antes da publicação na galeria.
-              </p>
+              <p class="eyebrow">Álbum de memórias</p>
+              <h2>Galeria da Iúna</h2>
+              <p>Publique, edite e organize as fotos que aparecerão no site.</p>
             </div>
+
+            <button class="button button-primary" id="newPhotoButton" type="button">
+              + Adicionar foto
+            </button>
           </div>
 
-          <div class="gallery-admin-grid" id="galleryAdminGrid">
+          <div class="gallery-admin-summary">
+            <article><small>Total de fotos</small><strong id="galleryTotalCount">0</strong></article>
+            <article><small>Publicadas</small><strong id="galleryPublishedCount">0</strong></article>
+            <article><small>Pendentes</small><strong id="galleryPendingCount">0</strong></article>
+            <article><small>Em destaque</small><strong id="galleryFeaturedCount">0</strong></article>
+          </div>
+
+          <div class="filter-bar gallery-filter-bar">
+            <input id="gallerySearch" type="search" placeholder="Buscar por título, legenda, local ou autor">
+
+            <select id="galleryAlbumFilter">
+              <option value="all">Todos os álbuns</option>
+              <option value="Preparativos">Preparativos</option>
+              <option value="Bagé">Piquenique em Bagé</option>
+              <option value="Porto Alegre">Piquenique em Porto Alegre</option>
+              <option value="Família">Família</option>
+              <option value="Amigos">Amigos</option>
+              <option value="Bastidores">Bastidores</option>
+              <option value="Outros">Outros</option>
+            </select>
+
+            <select id="galleryStatusFilter">
+              <option value="all">Todos os status</option>
+              <option value="pending">Pendentes</option>
+              <option value="approved">Aprovadas</option>
+              <option value="published">Publicadas</option>
+              <option value="hidden">Ocultas</option>
+              <option value="featured">Em destaque</option>
+            </select>
+          </div>
+
+          <div class="gallery-admin-grid gallery-editor-grid" id="galleryAdminGrid">
             <p class="empty-copy">Carregando fotos...</p>
           </div>
         </section>
@@ -517,6 +551,122 @@
         <span class="button-text">Salvar presente</span>
         <span class="button-loading" hidden>Salvando...</span>
       </button>
+    </form>
+  </dialog>
+
+  <dialog id="galleryDialog" class="admin-dialog gallery-dialog">
+    <form id="galleryForm" class="dialog-shell gallery-dialog-shell">
+      <button id="closeGalleryDialog" class="dialog-close" type="button" aria-label="Fechar">×</button>
+
+      <div class="dialog-heading">
+        <p class="eyebrow">Álbum de memórias</p>
+        <h2 id="galleryDialogTitle">Adicionar foto</h2>
+        <p>Edite as informações que serão exibidas junto com a imagem.</p>
+      </div>
+
+      <input id="galleryId" type="hidden">
+
+      <div class="gallery-edit-layout">
+        <div class="gallery-edit-preview-column">
+          <div class="gallery-edit-preview" id="galleryImagePreviewWrap">
+            <div class="gallery-edit-placeholder" id="galleryImagePlaceholder">
+              <span>▧</span>
+              <strong>Escolha uma imagem</strong>
+              <small>JPG, PNG ou WEBP</small>
+            </div>
+            <img id="galleryImagePreview" alt="Pré-visualização da foto" hidden>
+          </div>
+
+          <div class="gallery-image-actions">
+            <label class="button button-secondary gallery-file-button" for="galleryImage">Escolher imagem</label>
+            <input id="galleryImage" type="file" accept="image/jpeg,image/png,image/webp" hidden>
+            <button id="removeGalleryImage" class="button button-secondary" type="button">Remover</button>
+          </div>
+
+          <small class="gallery-image-help">A imagem será reduzida antes de ser salva no Firestore.</small>
+        </div>
+
+        <div class="form-grid gallery-form-grid">
+          <div class="form-field form-field-full">
+            <label for="galleryTitle">Título da foto *</label>
+            <input id="galleryTitle" type="text" maxlength="120" required>
+          </div>
+
+          <div class="form-field form-field-full">
+            <label for="galleryCaption">Legenda</label>
+            <textarea id="galleryCaption" rows="4" maxlength="700"></textarea>
+            <small><span id="galleryCaptionCount">0</span>/700 caracteres</small>
+          </div>
+
+          <div class="form-field">
+            <label for="galleryAlbum">Álbum *</label>
+            <select id="galleryAlbum" required>
+              <option value="">Selecione</option>
+              <option value="Preparativos">Preparativos</option>
+              <option value="Bagé">Piquenique em Bagé</option>
+              <option value="Porto Alegre">Piquenique em Porto Alegre</option>
+              <option value="Família">Família</option>
+              <option value="Amigos">Amigos</option>
+              <option value="Bastidores">Bastidores</option>
+              <option value="Outros">Outros</option>
+            </select>
+          </div>
+
+          <div class="form-field">
+            <label for="galleryEvent">Evento</label>
+            <select id="galleryEvent">
+              <option value="">Sem evento específico</option>
+              <option value="bage">Bagé</option>
+              <option value="porto-alegre">Porto Alegre</option>
+            </select>
+          </div>
+
+          <div class="form-field">
+            <label for="gallerySubmittedBy">Enviada por</label>
+            <input id="gallerySubmittedBy" type="text" maxlength="120">
+          </div>
+
+          <div class="form-field">
+            <label for="galleryPhotoDate">Data da foto</label>
+            <input id="galleryPhotoDate" type="date">
+          </div>
+
+          <div class="form-field">
+            <label for="galleryLocation">Local</label>
+            <input id="galleryLocation" type="text" maxlength="160">
+          </div>
+
+          <div class="form-field">
+            <label for="galleryOrder">Ordem de exibição</label>
+            <input id="galleryOrder" type="number" min="0" max="9999" value="0">
+          </div>
+
+          <label class="switch-field form-field-full">
+            <input id="galleryApproved" type="checkbox">
+            <span><b>Foto aprovada</b><small>Confirma que a imagem pode ser usada no site.</small></span>
+          </label>
+
+          <label class="switch-field form-field-full">
+            <input id="galleryPublished" type="checkbox">
+            <span><b>Publicar na galeria</b><small>A foto ficará visível para os convidados.</small></span>
+          </label>
+
+          <label class="switch-field form-field-full">
+            <input id="galleryFeatured" type="checkbox">
+            <span><b>Foto em destaque</b><small>Poderá aparecer nas áreas principais do site.</small></span>
+          </label>
+        </div>
+      </div>
+
+      <p class="form-feedback" id="galleryFormFeedback" role="status" aria-live="polite"></p>
+
+      <div class="gallery-dialog-actions">
+        <button class="button button-secondary" id="cancelGalleryEdit" type="button">Cancelar</button>
+        <button class="button button-primary" type="submit">
+          <span class="button-text">Salvar foto</span>
+          <span class="button-loading" hidden>Salvando...</span>
+        </button>
+      </div>
     </form>
   </dialog>
 

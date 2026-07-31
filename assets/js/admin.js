@@ -30,6 +30,7 @@ const state = {
   gallery: [],
   unsubs: [],
   currentGiftImageData: "",
+  currentGalleryImageData: "",
   confirmAction: null
 };
 
@@ -59,6 +60,33 @@ const giftSelectionsTableBody = document.querySelector("#giftSelectionsTableBody
 
 const messagesGrid = document.querySelector("#messagesGrid");
 const galleryAdminGrid = document.querySelector("#galleryAdminGrid");
+const newPhotoButton = document.querySelector("#newPhotoButton");
+const gallerySearch = document.querySelector("#gallerySearch");
+const galleryAlbumFilter = document.querySelector("#galleryAlbumFilter");
+const galleryStatusFilter = document.querySelector("#galleryStatusFilter");
+const galleryDialog = document.querySelector("#galleryDialog");
+const galleryForm = document.querySelector("#galleryForm");
+const closeGalleryDialog = document.querySelector("#closeGalleryDialog");
+const cancelGalleryEdit = document.querySelector("#cancelGalleryEdit");
+const galleryDialogTitle = document.querySelector("#galleryDialogTitle");
+const galleryIdInput = document.querySelector("#galleryId");
+const galleryTitleInput = document.querySelector("#galleryTitle");
+const galleryCaptionInput = document.querySelector("#galleryCaption");
+const galleryCaptionCount = document.querySelector("#galleryCaptionCount");
+const galleryAlbumInput = document.querySelector("#galleryAlbum");
+const galleryEventInput = document.querySelector("#galleryEvent");
+const gallerySubmittedByInput = document.querySelector("#gallerySubmittedBy");
+const galleryPhotoDateInput = document.querySelector("#galleryPhotoDate");
+const galleryLocationInput = document.querySelector("#galleryLocation");
+const galleryOrderInput = document.querySelector("#galleryOrder");
+const galleryApprovedInput = document.querySelector("#galleryApproved");
+const galleryPublishedInput = document.querySelector("#galleryPublished");
+const galleryFeaturedInput = document.querySelector("#galleryFeatured");
+const galleryImageInput = document.querySelector("#galleryImage");
+const galleryImagePreview = document.querySelector("#galleryImagePreview");
+const galleryImagePlaceholder = document.querySelector("#galleryImagePlaceholder");
+const removeGalleryImage = document.querySelector("#removeGalleryImage");
+const galleryFormFeedback = document.querySelector("#galleryFormFeedback");
 
 const giftDialog = document.querySelector("#giftDialog");
 const giftForm = document.querySelector("#giftForm");
@@ -563,49 +591,112 @@ function renderMessages() {
 }
 
 function renderGallery() {
-  if (!state.gallery.length) {
+  const term = normalizeText(gallerySearch?.value ?? "").toLowerCase();
+  const albumFilter = galleryAlbumFilter?.value ?? "all";
+  const statusFilter = galleryStatusFilter?.value ?? "all";
+
+  const sorted = [...state.gallery].sort((a, b) => {
+    const orderA = Number(a.data.order ?? 9999);
+    const orderB = Number(b.data.order ?? 9999);
+    if (orderA !== orderB) return orderA - orderB;
+
+    const dateA = timestampToDate(a.data.createdAt)?.getTime() ?? 0;
+    const dateB = timestampToDate(b.data.createdAt)?.getTime() ?? 0;
+    return dateB - dateA;
+  });
+
+  const filtered = sorted.filter(({ data }) => {
+    const searchable = [
+      data.title, data.caption, data.submittedBy,
+      data.location, data.album, data.eventLabel
+    ]
+      .map((value) => normalizeText(value).toLowerCase())
+      .join(" ");
+
+    const matchesAlbum =
+      albumFilter === "all" || data.album === albumFilter;
+
+    const matchesStatus =
+      statusFilter === "all" ||
+      (statusFilter === "pending" && data.approved !== true) ||
+      (statusFilter === "approved" && data.approved === true) ||
+      (statusFilter === "published" && data.published === true) ||
+      (statusFilter === "hidden" && data.published !== true) ||
+      (statusFilter === "featured" && data.featured === true);
+
+    return (!term || searchable.includes(term)) && matchesAlbum && matchesStatus;
+  });
+
+  document.querySelector("#galleryTotalCount").textContent = state.gallery.length;
+  document.querySelector("#galleryPublishedCount").textContent =
+    state.gallery.filter((item) => item.data.published === true).length;
+  document.querySelector("#galleryPendingCount").textContent =
+    state.gallery.filter((item) => item.data.approved !== true).length;
+  document.querySelector("#galleryFeaturedCount").textContent =
+    state.gallery.filter((item) => item.data.featured === true).length;
+
+  if (!filtered.length) {
     galleryAdminGrid.innerHTML =
-      '<p class="empty-copy">Nenhuma foto recebida.</p>';
+      '<p class="empty-copy">Nenhuma foto encontrada com os filtros selecionados.</p>';
     return;
   }
 
-  galleryAdminGrid.innerHTML = state.gallery
+  galleryAdminGrid.innerHTML = filtered
     .map(({ id, data }) => {
-      const image = safeImage(data.imageData ?? "");
+      const image = safeImage(data.imageData ?? data.imageUrl ?? "");
+      const approved = data.approved === true;
+      const publishedPhoto = data.published === true;
+      const featuredPhoto = data.featured === true;
 
       return `
-        <article class="gallery-admin-card ${data.approved === true ? "" : "pending"}">
-          <div class="gallery-admin-image">
-            ${image ? `<img src="${image}" alt="${escapeHtml(data.title ?? "Foto")}">` : "▧"}
-          </div>
+        <article class="gallery-admin-card gallery-editor-card ${approved ? "" : "pending"}">
+          <button class="gallery-admin-image edit-photo" type="button" data-id="${escapeHtml(id)}">
+            ${image
+              ? `<img src="${image}" alt="${escapeHtml(data.title ?? "Foto")}">`
+              : '<span class="gallery-card-placeholder">▧</span>'
+            }
+            ${featuredPhoto ? '<span class="gallery-featured-badge">★ Destaque</span>' : ""}
+            <span class="gallery-image-edit-hint">Editar foto</span>
+          </button>
 
           <div class="gallery-admin-content">
             <div class="gallery-admin-top">
               <div>
-                <span class="status-pill ${data.approved === true ? "approved" : "pending"}">
-                  ${data.approved === true ? "Aprovada" : "Pendente"}
-                </span>
+                <div class="gallery-status-row">
+                  <span class="status-pill ${approved ? "approved" : "pending"}">
+                    ${approved ? "Aprovada" : "Pendente"}
+                  </span>
+                  <span class="status-pill ${publishedPhoto ? "published" : "inactive"}">
+                    ${publishedPhoto ? "Publicada" : "Oculta"}
+                  </span>
+                </div>
                 <h3>${escapeHtml(data.title ?? "Foto sem título")}</h3>
               </div>
+              <span class="gallery-order-badge">Ordem ${Number(data.order ?? 0)}</span>
             </div>
 
-            <p>${escapeHtml(data.caption ?? "")}</p>
-            <small>Enviada por ${escapeHtml(data.submittedBy ?? "convidado")}</small>
+            <p class="gallery-card-caption">${escapeHtml(data.caption ?? "Sem legenda.")}</p>
 
-            <div class="card-actions">
-              ${
-                data.approved === true
-                  ? `<button class="icon-button reject-photo" data-id="${escapeHtml(id)}" type="button">Ocultar</button>`
-                  : `<button class="icon-button approve approve-photo" data-id="${escapeHtml(id)}" type="button">Aprovar</button>`
+            <dl class="gallery-card-meta">
+              <div><dt>Álbum</dt><dd>${escapeHtml(data.album ?? "Outros")}</dd></div>
+              <div><dt>Evento</dt><dd>${escapeHtml(data.eventLabel ?? "—")}</dd></div>
+              <div><dt>Local</dt><dd>${escapeHtml(data.location ?? "—")}</dd></div>
+              <div><dt>Enviada por</dt><dd>${escapeHtml(data.submittedBy ?? "Convidado")}</dd></div>
+            </dl>
+
+            <div class="card-actions gallery-card-actions">
+              <button class="icon-button edit-photo" data-id="${escapeHtml(id)}" type="button">Editar</button>
+              ${approved
+                ? `<button class="icon-button reject-photo" data-id="${escapeHtml(id)}" type="button">Desaprovar</button>`
+                : `<button class="icon-button approve approve-photo" data-id="${escapeHtml(id)}" type="button">Aprovar</button>`
               }
-
-              <button
-                class="icon-button danger delete-photo"
+              <button class="icon-button toggle-photo-publication"
                 data-id="${escapeHtml(id)}"
-                type="button"
-              >
-                Excluir
+                data-published="${publishedPhoto}"
+                type="button">
+                ${publishedPhoto ? "Ocultar" : "Publicar"}
               </button>
+              <button class="icon-button danger delete-photo" data-id="${escapeHtml(id)}" type="button">Excluir</button>
             </div>
           </div>
         </article>
@@ -810,6 +901,134 @@ async function saveGift(event) {
   }
 }
 
+function updateGalleryPreview() {
+  const hasImage = Boolean(state.currentGalleryImageData);
+  galleryImagePreview.hidden = !hasImage;
+  galleryImagePlaceholder.hidden = hasImage;
+
+  if (hasImage) {
+    galleryImagePreview.src = state.currentGalleryImageData;
+  } else {
+    galleryImagePreview.removeAttribute("src");
+  }
+}
+
+function openGalleryForm(photo = null) {
+  galleryForm.reset();
+  galleryFormFeedback.textContent = "";
+  galleryFormFeedback.className = "form-feedback";
+  state.currentGalleryImageData = "";
+
+  if (photo) {
+    galleryDialogTitle.textContent = "Editar foto";
+    galleryIdInput.value = photo.id;
+    galleryTitleInput.value = photo.data.title ?? "";
+    galleryCaptionInput.value = photo.data.caption ?? "";
+    galleryAlbumInput.value = photo.data.album ?? "Outros";
+    galleryEventInput.value = photo.data.eventId ?? "";
+    gallerySubmittedByInput.value = photo.data.submittedBy ?? "";
+    galleryPhotoDateInput.value = photo.data.photoDate ?? "";
+    galleryLocationInput.value = photo.data.location ?? "";
+    galleryOrderInput.value = Number(photo.data.order ?? 0);
+    galleryApprovedInput.checked = photo.data.approved === true;
+    galleryPublishedInput.checked = photo.data.published === true;
+    galleryFeaturedInput.checked = photo.data.featured === true;
+    state.currentGalleryImageData = photo.data.imageData ?? photo.data.imageUrl ?? "";
+  } else {
+    galleryDialogTitle.textContent = "Adicionar foto";
+    galleryIdInput.value = "";
+    galleryAlbumInput.value = "Preparativos";
+    galleryOrderInput.value = state.gallery.length;
+    galleryApprovedInput.checked = true;
+    galleryPublishedInput.checked = true;
+    galleryFeaturedInput.checked = false;
+  }
+
+  galleryCaptionCount.textContent = String(galleryCaptionInput.value.length);
+  updateGalleryPreview();
+  galleryDialog.showModal();
+  document.body.classList.add("modal-open");
+}
+
+function closeGalleryForm() {
+  galleryDialog.close();
+  document.body.classList.remove("modal-open");
+}
+
+async function saveGalleryPhoto(event) {
+  event.preventDefault();
+
+  const photoId = galleryIdInput.value;
+  const title = normalizeText(galleryTitleInput.value);
+  const album = galleryAlbumInput.value;
+
+  if (title.length < 2 || !album) {
+    galleryFormFeedback.textContent = "Informe o título e selecione o álbum.";
+    galleryFormFeedback.classList.add("is-error");
+    return;
+  }
+
+  if (!state.currentGalleryImageData) {
+    galleryFormFeedback.textContent = "Escolha uma imagem para continuar.";
+    galleryFormFeedback.classList.add("is-error");
+    return;
+  }
+
+  const submitButton = galleryForm.querySelector('button[type="submit"]');
+  const buttonText = submitButton.querySelector(".button-text");
+  const buttonLoading = submitButton.querySelector(".button-loading");
+
+  submitButton.disabled = true;
+  buttonText.hidden = true;
+  buttonLoading.hidden = false;
+
+  try {
+    const eventId = galleryEventInput.value;
+    const eventLabels = {
+      bage: "Bagé",
+      "porto-alegre": "Porto Alegre"
+    };
+
+    const payload = {
+      title,
+      caption: normalizeText(galleryCaptionInput.value),
+      album,
+      eventId,
+      eventLabel: eventLabels[eventId] ?? "",
+      submittedBy: normalizeText(gallerySubmittedByInput.value),
+      photoDate: galleryPhotoDateInput.value || "",
+      location: normalizeText(galleryLocationInput.value),
+      order: Math.max(0, Number(galleryOrderInput.value ?? 0)),
+      approved: galleryApprovedInput.checked,
+      published: galleryPublishedInput.checked,
+      featured: galleryFeaturedInput.checked,
+      active: galleryPublishedInput.checked,
+      imageData: state.currentGalleryImageData,
+      updatedAt: serverTimestamp()
+    };
+
+    if (photoId) {
+      await updateDoc(doc(db, "gallery", photoId), payload);
+    } else {
+      await addDoc(collection(db, "gallery"), {
+        ...payload,
+        createdAt: serverTimestamp()
+      });
+    }
+
+    closeGalleryForm();
+  } catch (error) {
+    console.error("[ADMIN GALLERY] Erro ao salvar foto:", error);
+    galleryFormFeedback.textContent =
+      "Não foi possível salvar a foto. Verifique as permissões do Firestore.";
+    galleryFormFeedback.classList.add("is-error");
+  } finally {
+    submitButton.disabled = false;
+    buttonText.hidden = false;
+    buttonLoading.hidden = true;
+  }
+}
+
 function askConfirmation({ title, message, action }) {
   confirmDialogTitle.textContent = title;
   confirmDialogMessage.textContent = message;
@@ -875,6 +1094,39 @@ guestStatusFilter.addEventListener("change", renderGuests);
 giftAdminSearch.addEventListener("input", renderAdminGifts);
 giftAdminStatusFilter.addEventListener("change", renderAdminGifts);
 selectionSearch.addEventListener("input", renderSelections);
+
+gallerySearch.addEventListener("input", renderGallery);
+galleryAlbumFilter.addEventListener("change", renderGallery);
+galleryStatusFilter.addEventListener("change", renderGallery);
+
+newPhotoButton.addEventListener("click", () => openGalleryForm());
+closeGalleryDialog.addEventListener("click", closeGalleryForm);
+cancelGalleryEdit.addEventListener("click", closeGalleryForm);
+galleryForm.addEventListener("submit", saveGalleryPhoto);
+
+galleryCaptionInput.addEventListener("input", () => {
+  galleryCaptionCount.textContent = String(galleryCaptionInput.value.length);
+});
+
+galleryImageInput.addEventListener("change", async () => {
+  const file = galleryImageInput.files?.[0];
+  if (!file) return;
+
+  try {
+    state.currentGalleryImageData = await compressImage(file, 1400, 0.8);
+    updateGalleryPreview();
+  } catch (error) {
+    console.error("[ADMIN GALLERY] Erro ao processar imagem:", error);
+    galleryFormFeedback.textContent = "Não foi possível processar esta imagem.";
+    galleryFormFeedback.classList.add("is-error");
+  }
+});
+
+removeGalleryImage.addEventListener("click", () => {
+  state.currentGalleryImageData = "";
+  galleryImageInput.value = "";
+  updateGalleryPreview();
+});
 
 newGiftButton.addEventListener("click", () => openGiftForm());
 closeGiftDialog.addEventListener("click", closeGiftForm);
@@ -963,23 +1215,55 @@ messagesGrid.addEventListener("click", (event) => {
   }
 });
 
-galleryAdminGrid.addEventListener("click", (event) => {
+galleryAdminGrid.addEventListener("click", async (event) => {
+  const edit = event.target.closest(".edit-photo");
   const approve = event.target.closest(".approve-photo");
   const reject = event.target.closest(".reject-photo");
+  const togglePublication = event.target.closest(".toggle-photo-publication");
   const remove = event.target.closest(".delete-photo");
 
+  if (edit) {
+    const photo = state.gallery.find((item) => item.id === edit.dataset.id);
+    if (photo) openGalleryForm(photo);
+    return;
+  }
+
   if (approve) {
-    updateModeration("gallery", approve.dataset.id, true);
+    await updateModeration("gallery", approve.dataset.id, true);
+    return;
   }
 
   if (reject) {
-    updateModeration("gallery", reject.dataset.id, false);
+    await updateDoc(doc(db, "gallery", reject.dataset.id), {
+      approved: false,
+      published: false,
+      active: false,
+      updatedAt: serverTimestamp()
+    });
+    return;
+  }
+
+  if (togglePublication) {
+    const willPublish = togglePublication.dataset.published !== "true";
+    const publicationPayload = {
+      published: willPublish,
+      active: willPublish,
+      updatedAt: serverTimestamp()
+    };
+
+    if (willPublish) publicationPayload.approved = true;
+
+    await updateDoc(
+      doc(db, "gallery", togglePublication.dataset.id),
+      publicationPayload
+    );
+    return;
   }
 
   if (remove) {
     askConfirmation({
       title: "Excluir foto?",
-      message: "A imagem será removida definitivamente da galeria.",
+      message: "A imagem e todas as informações serão removidas definitivamente.",
       action: () => deleteDoc(doc(db, "gallery", remove.dataset.id))
     });
   }
@@ -989,6 +1273,10 @@ cancelConfirm.addEventListener("click", closeConfirmation);
 acceptConfirm.addEventListener("click", runConfirmation);
 
 giftDialog.addEventListener("close", () => {
+  document.body.classList.remove("modal-open");
+});
+
+galleryDialog.addEventListener("close", () => {
   document.body.classList.remove("modal-open");
 });
 
