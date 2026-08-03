@@ -57,14 +57,15 @@
           <span class="nav-badge" id="guestsBadge">0</span>
         </button>
 
-        <a
-          class="nav-item nav-page-link"
-          href="./admin-convites.html"
-          data-admin-page-link
+        <button
+          class="nav-item"
+          id="openInvitationsPage"
+          type="button"
         >
           <span class="nav-icon">📨</span>
-          <span>Convites WhatsApp</span>
-        </a>
+          <span>Enviar convites</span>
+          <span class="nav-badge">WhatsApp</span>
+        </button>
 
         <button class="nav-item" type="button" data-section="gifts">
           <span class="nav-icon">🎁</span>
@@ -697,21 +698,15 @@
   </dialog>
 
   <script>
-    /*
-     * Evita que o JavaScript das seções internas intercepte
-     * o link que abre uma página administrativa separada.
-     */
-    document.addEventListener(
-      "click",
-      (event) => {
-        const pageLink = event.target.closest("[data-admin-page-link]");
+    document.addEventListener("DOMContentLoaded", () => {
+      const invitationsButton = document.querySelector(
+        "#openInvitationsPage"
+      );
 
-        if (pageLink) {
-          event.stopImmediatePropagation();
-        }
-      },
-      true
-    );
+      invitationsButton?.addEventListener("click", () => {
+        window.location.href = "./admin-convites.html";
+      });
+    });
   </script>
 
   <script type="module" src="./assets/js/admin-auth.js"></script>
