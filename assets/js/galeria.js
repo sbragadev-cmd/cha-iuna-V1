@@ -174,23 +174,16 @@ function timestampToMillis(value) {
  * published não existir, usamos active como referência.
  */
 function isPublicPhoto(photo) {
-  const approved =
-    photo.approved === true;
+  const approved = photo.approved === true;
+  const active = photo.active !== false;
+  const hasImage = Boolean(getPhotoSource(photo));
 
-  const published =
-    typeof photo.published === "boolean"
-      ? photo.published
-      : photo.active === true;
-
-  const active =
-    photo.active !== false;
-
-  return (
-    approved &&
-    published &&
-    active &&
-    Boolean(getPhotoSource(photo))
-  );
+  /*
+   * Toda foto aprovada e ativa deve aparecer na galeria.
+   * O campo published não é mais obrigatório, pois fotos antigas
+   * ou aprovadas pelo painel podem continuar com published: false.
+   */
+  return approved && active && hasImage;
 }
 
 function sortPhotos(items) {
