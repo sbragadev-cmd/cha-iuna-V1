@@ -1,0 +1,333 @@
+:root {
+  --invite-purple: #7952a8;
+  --invite-purple-dark: #5b3e7f;
+  --invite-green: #6f9d67;
+  --invite-yellow: #e7b956;
+  --invite-border: rgba(91, 62, 127, 0.12);
+}
+
+.sidebar-nav a.nav-item {
+  text-decoration: none;
+}
+
+.invites-page {
+  display: grid;
+  gap: 22px;
+}
+
+.invites-hero {
+  display: grid;
+  min-height: 280px;
+  padding: clamp(28px, 5vw, 50px);
+  overflow: hidden;
+  border: 1px solid var(--invite-border);
+  border-radius: 30px;
+  align-items: center;
+  gap: 28px;
+  background:
+    radial-gradient(circle at 85% 20%, rgba(231,185,86,.26), transparent 14rem),
+    linear-gradient(135deg,#fffaf0,#f2e9f8 55%,#eef7e9);
+  box-shadow: 0 22px 58px rgba(67,45,83,.1);
+  grid-template-columns: minmax(0,1.25fr) minmax(250px,.75fr);
+}
+
+.invites-hero h2 {
+  max-width: 760px;
+  margin: 0;
+  color: var(--invite-purple-dark);
+  font-family: "Playfair Display", serif;
+  font-size: clamp(2rem,4.5vw,3.35rem);
+  line-height: 1.08;
+}
+
+.invites-hero p:not(.eyebrow) {
+  max-width: 680px;
+  margin: 16px 0 22px;
+  color: #746879;
+  line-height: 1.65;
+}
+
+.invites-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.invite-art {
+  display: grid;
+  min-height: 190px;
+  padding: 28px;
+  border: 1px solid var(--invite-border);
+  border-radius: 26px;
+  align-content: center;
+  justify-items: center;
+  background: rgba(255,255,255,.78);
+  box-shadow: 0 16px 38px rgba(72,48,86,.09);
+  text-align: center;
+  transform: rotate(2deg);
+}
+
+.invite-art > span {
+  display: grid;
+  width: 58px;
+  height: 58px;
+  margin-bottom: 15px;
+  border-radius: 20px;
+  color: #fff;
+  background: var(--invite-purple);
+  font-size: 1.35rem;
+  place-items: center;
+}
+
+.invite-art strong {
+  color: var(--invite-purple-dark);
+  font-family: "Playfair Display", serif;
+  font-size: 1.15rem;
+  line-height: 1.25;
+}
+
+.invite-art small {
+  margin-top: 9px;
+  color: #887c8c;
+}
+
+.invite-stats {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(4,minmax(0,1fr));
+}
+
+.invite-stats article {
+  padding: 20px;
+  border: 1px solid var(--invite-border);
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 12px 30px rgba(66,43,80,.06);
+}
+
+.invite-stats small,
+.invite-stats strong {
+  display: block;
+}
+
+.invite-stats small {
+  color: #887c8c;
+  font-size: .72rem;
+  font-weight: 650;
+}
+
+.invite-stats strong {
+  margin-top: 8px;
+  color: var(--invite-purple-dark);
+  font-family: "Playfair Display", serif;
+  font-size: 1.8rem;
+}
+
+.message-template-card {
+  padding: 24px;
+  border: 1px solid var(--invite-border);
+  border-radius: 24px;
+  background: #fff;
+  box-shadow: 0 14px 34px rgba(65,43,80,.06);
+}
+
+.message-template-heading,
+.template-footer {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.message-template-heading h2 {
+  margin: 0;
+  color: var(--invite-purple-dark);
+  font-family: "Playfair Display", serif;
+}
+
+.message-template-heading p:not(.eyebrow) {
+  margin: 7px 0 0;
+  color: #827684;
+  font-size: .78rem;
+}
+
+#messageTemplate,
+#messagePreview {
+  width: 100%;
+  margin-top: 18px;
+  padding: 16px;
+  border: 1px solid rgba(91,62,127,.16);
+  border-radius: 16px;
+  outline: none;
+  color: #493f4d;
+  background: #fdfbfd;
+  box-sizing: border-box;
+  font-family: "DM Sans", sans-serif;
+  line-height: 1.6;
+  resize: vertical;
+}
+
+#messageTemplate:focus,
+#messagePreview:focus {
+  border-color: rgba(121,82,168,.6);
+  box-shadow: 0 0 0 4px rgba(121,82,168,.09);
+}
+
+.template-tags {
+  display: flex;
+  margin-top: 12px;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.template-tags button {
+  padding: 7px 9px;
+  border: 1px solid var(--invite-border);
+  border-radius: 999px;
+  color: #674987;
+  background: #f2eaf8;
+  cursor: pointer;
+  font-size: .68rem;
+  font-weight: 800;
+}
+
+.template-footer {
+  margin-top: 16px;
+  align-items: center;
+}
+
+.template-footer small {
+  color: #8b808e;
+}
+
+.invites-filters {
+  grid-template-columns: minmax(240px,1fr) repeat(3,minmax(155px,210px));
+}
+
+.page-feedback {
+  min-height: 20px;
+  color: var(--invite-purple);
+  font-size: .74rem;
+}
+
+.guest-cell strong,
+.guest-cell small {
+  display: block;
+}
+
+.guest-cell strong {
+  color: #514356;
+}
+
+.guest-cell small {
+  margin-top: 4px;
+  color: #928697;
+}
+
+.invite-status {
+  display: inline-flex;
+  min-height: 26px;
+  padding: 0 9px;
+  border-radius: 999px;
+  align-items: center;
+  font-size: .65rem;
+  font-weight: 800;
+}
+
+.invite-status.pending,
+.invite-status.waiting {
+  color: #88631d;
+  background: #fff2c9;
+}
+
+.invite-status.sent,
+.invite-status.confirmed {
+  color: #3f7048;
+  background: #e2f2e5;
+}
+
+.invite-status.declined {
+  color: #8a4457;
+  background: #f8e3e9;
+}
+
+.invite-actions {
+  display: flex;
+  min-width: 290px;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.invite-action {
+  min-height: 34px;
+  padding: 0 10px;
+  border: 1px solid var(--invite-border);
+  border-radius: 11px;
+  color: #62477e;
+  background: #fff;
+  cursor: pointer;
+  font-size: .66rem;
+  font-weight: 750;
+}
+
+.invite-action.primary {
+  color: #fff;
+  border-color: var(--invite-purple);
+  background: var(--invite-purple);
+}
+
+.invite-action.danger {
+  color: #9a3f54;
+}
+
+.invite-dialog {
+  width: min(700px,calc(100vw - 30px));
+}
+
+.message-dialog {
+  width: min(760px,calc(100vw - 30px));
+}
+
+@media (max-width: 1120px) {
+  .invites-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .invite-stats {
+    grid-template-columns: repeat(2,minmax(0,1fr));
+  }
+
+  .invites-filters {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .invites-filters input {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 640px) {
+  .invites-hero {
+    padding: 25px 20px;
+    border-radius: 24px;
+  }
+
+  .invites-hero-actions,
+  .message-template-heading,
+  .template-footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .invite-stats {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .invites-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .invites-filters input {
+    grid-column: auto;
+  }
+}

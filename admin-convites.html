@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Convites | Área dos Pais — Chá da Iúna</title>
+
+  <meta
+    name="description"
+    content="Lista de convidados e envio de convites pelo WhatsApp."
+  >
+
+  <meta name="theme-color" content="#5b3e7f">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700&display=swap"
+    rel="stylesheet"
+  >
+
+  <link rel="stylesheet" href="./assets/css/admin.css">
+  <link rel="stylesheet" href="./assets/css/admin-convites.css">
+</head>
+
+<body>
+  <div class="admin-loading" id="adminLoading">
+    <div class="admin-loading-card">
+      <span class="admin-loading-mark">I</span>
+      <strong>Carregando convites...</strong>
+      <small>Organizando a lista de convidados.</small>
+    </div>
+  </div>
+
+  <div class="admin-app" id="adminApp" hidden>
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-brand">
+        <a href="./index.html" aria-label="Voltar ao site">
+          <span class="brand-mark">I</span>
+          <span>
+            <strong>Chá da Iúna</strong>
+            <small>Área dos Pais</small>
+          </span>
+        </a>
+      </div>
+
+      <nav class="sidebar-nav" aria-label="Navegação administrativa">
+        <a class="nav-item" href="./admin.html">
+          <span class="nav-icon">⌂</span>
+          <span>Visão geral</span>
+        </a>
+
+        <a class="nav-item active" href="./admin-convites.html">
+          <span class="nav-icon">✉</span>
+          <span>Convites</span>
+          <span class="nav-badge" id="pendingBadge">0</span>
+        </a>
+
+        <a class="nav-item" href="./admin.html#gifts">
+          <span class="nav-icon">🎁</span>
+          <span>Presentes</span>
+        </a>
+
+        <a class="nav-item" href="./admin.html#gallery">
+          <span class="nav-icon">▧</span>
+          <span>Galeria</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <a class="site-link" href="./index.html" target="_blank" rel="noopener">
+          Abrir site público
+        </a>
+
+        <button class="logout-button" id="logoutButton" type="button">
+          Sair da Área dos Pais
+        </button>
+      </div>
+    </aside>
+
+    <div class="admin-main">
+      <header class="topbar">
+        <button
+          class="sidebar-toggle"
+          id="sidebarToggle"
+          type="button"
+          aria-label="Abrir menu"
+          aria-expanded="false"
+        >
+          ☰
+        </button>
+
+        <div class="topbar-title">
+          <p>Organização dos convidados</p>
+          <h1>Convites</h1>
+        </div>
+
+        <div class="topbar-actions">
+          <button class="sync-button" id="syncButton" type="button">
+            <span>↻</span>
+            Sincronizar
+          </button>
+
+          <div class="admin-profile">
+            <span class="profile-avatar" id="profileAvatar">P</span>
+            <span>
+              <strong id="profileName">Pais da Iúna</strong>
+              <small id="profileRole">Administrador</small>
+            </span>
+          </div>
+        </div>
+      </header>
+
+      <main class="admin-content invites-page">
+        <section class="invites-hero">
+          <div>
+            <p class="eyebrow">Um convite para cada pessoa querida</p>
+
+            <h2>
+              Envie o convite da Iúna pelo WhatsApp com a mensagem pronta.
+            </h2>
+
+            <p>
+              Cadastre os convidados, personalize o texto e acompanhe
+              quem já recebeu o convite.
+            </p>
+
+            <div class="invites-hero-actions">
+              <button class="button button-primary" id="newGuestButton" type="button">
+                + Adicionar convidado
+              </button>
+
+              <button class="button button-secondary" id="sendNextButton" type="button">
+                Enviar próximo convite
+              </button>
+            </div>
+          </div>
+
+          <div class="invite-art" aria-hidden="true">
+            <span>✉</span>
+            <strong>Piquenique de boas-vindas da Iúna</strong>
+            <small>05/09/2026 • 15h • Sítio Mãe Velha</small>
+          </div>
+        </section>
+
+        <section class="invite-stats">
+          <article>
+            <small>Total</small>
+            <strong id="statTotal">0</strong>
+          </article>
+
+          <article>
+            <small>Pendentes</small>
+            <strong id="statPending">0</strong>
+          </article>
+
+          <article>
+            <small>Enviados</small>
+            <strong id="statSent">0</strong>
+          </article>
+
+          <article>
+            <small>Confirmados</small>
+            <strong id="statConfirmed">0</strong>
+          </article>
+        </section>
+
+        <section class="message-template-card">
+          <div class="message-template-heading">
+            <div>
+              <p class="eyebrow">Mensagem padrão</p>
+              <h2>Texto do convite</h2>
+              <p>
+                Os campos entre chaves são substituídos automaticamente.
+              </p>
+            </div>
+
+            <button class="button button-secondary" id="restoreTemplateButton" type="button">
+              Restaurar padrão
+            </button>
+          </div>
+
+          <textarea id="messageTemplate" rows="12" maxlength="1800"></textarea>
+
+          <div class="template-tags">
+            <button type="button" data-variable="{nome}">{nome}</button>
+            <button type="button" data-variable="{evento}">{evento}</button>
+            <button type="button" data-variable="{data}">{data}</button>
+            <button type="button" data-variable="{horario}">{horario}</button>
+            <button type="button" data-variable="{local}">{local}</button>
+            <button type="button" data-variable="{link}">{link}</button>
+          </div>
+
+          <div class="template-footer">
+            <small id="templateStatus">
+              Mensagem salva neste dispositivo.
+            </small>
+
+            <button class="button button-primary" id="saveTemplateButton" type="button">
+              Salvar mensagem
+            </button>
+          </div>
+        </section>
+
+        <section class="section-toolbar">
+          <div>
+            <p class="eyebrow">Lista de convidados</p>
+            <h2>Controle dos envios</h2>
+            <p>
+              Cadastre, edite e acompanhe cada convite.
+            </p>
+          </div>
+
+          <button class="button button-primary" id="newGuestButtonSecondary" type="button">
+            + Novo convidado
+          </button>
+        </section>
+
+        <div class="filter-bar invites-filters">
+          <input
+            id="guestSearch"
+            type="search"
+            placeholder="Buscar por nome, telefone ou grupo"
+          >
+
+          <select id="eventFilter">
+            <option value="all">Todos os eventos</option>
+            <option value="bage">Bagé</option>
+            <option value="porto-alegre">Porto Alegre</option>
+          </select>
+
+          <select id="sendFilter">
+            <option value="all">Todos os envios</option>
+            <option value="pending">Pendentes</option>
+            <option value="sent">Enviados</option>
+          </select>
+
+          <select id="responseFilter">
+            <option value="all">Todas as respostas</option>
+            <option value="waiting">Aguardando</option>
+            <option value="confirmed">Confirmados</option>
+            <option value="declined">Não poderão ir</option>
+          </select>
+        </div>
+
+        <p class="page-feedback" id="pageFeedback" role="status" aria-live="polite"></p>
+
+        <div class="table-card">
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Convidado</th>
+                  <th>Evento</th>
+                  <th>Pessoas</th>
+                  <th>Convite</th>
+                  <th>Resposta</th>
+                  <th>Último envio</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+
+              <tbody id="guestsTableBody">
+                <tr>
+                  <td colspan="7" class="table-empty">
+                    Carregando convidados...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <dialog id="guestDialog" class="admin-dialog invite-dialog">
+    <form id="guestForm" class="dialog-shell">
+      <button
+        id="closeGuestDialog"
+        class="dialog-close"
+        type="button"
+        aria-label="Fechar"
+      >
+        ×
+      </button>
+
+      <div class="dialog-heading">
+        <p class="eyebrow">Lista de convidados</p>
+        <h2 id="guestDialogTitle">Adicionar convidado</h2>
+      </div>
+
+      <input id="guestId" type="hidden">
+
+      <div class="form-grid">
+        <div class="form-field form-field-full">
+          <label for="guestName">Nome do convidado ou família *</label>
+          <input id="guestName" type="text" maxlength="120" required>
+        </div>
+
+        <div class="form-field">
+          <label for="guestPhone">WhatsApp *</label>
+          <input
+            id="guestPhone"
+            type="tel"
+            maxlength="20"
+            placeholder="(51) 99999-9999"
+            required
+          >
+        </div>
+
+        <div class="form-field">
+          <label for="guestGroup">Grupo</label>
+          <select id="guestGroup">
+            <option value="Família">Família</option>
+            <option value="Amigos">Amigos</option>
+            <option value="Capoeira">Capoeira</option>
+            <option value="Trabalho">Trabalho</option>
+            <option value="Outros">Outros</option>
+          </select>
+        </div>
+
+        <div class="form-field">
+          <label for="guestEvent">Evento *</label>
+          <select id="guestEvent" required>
+            <option value="bage">Bagé</option>
+            <option value="porto-alegre">Porto Alegre</option>
+          </select>
+        </div>
+
+        <div class="form-field">
+          <label for="guestPeopleCount">Quantidade de pessoas *</label>
+          <input id="guestPeopleCount" type="number" min="1" max="20" value="1" required>
+        </div>
+
+        <div class="form-field">
+          <label for="guestAdults">Adultos</label>
+          <input id="guestAdults" type="number" min="0" max="20" value="1">
+        </div>
+
+        <div class="form-field">
+          <label for="guestChildren">Crianças</label>
+          <input id="guestChildren" type="number" min="0" max="20" value="0">
+        </div>
+
+        <div class="form-field form-field-full">
+          <label for="guestNotes">Observações</label>
+          <textarea id="guestNotes" rows="3" maxlength="500"></textarea>
+        </div>
+      </div>
+
+      <p class="form-feedback" id="guestFormFeedback" role="status" aria-live="polite"></p>
+
+      <button class="button button-primary button-full" type="submit">
+        <span class="button-text">Salvar convidado</span>
+        <span class="button-loading" hidden>Salvando...</span>
+      </button>
+    </form>
+  </dialog>
+
+  <dialog id="messageDialog" class="admin-dialog invite-dialog message-dialog">
+    <div class="dialog-shell">
+      <button
+        id="closeMessageDialog"
+        class="dialog-close"
+        type="button"
+        aria-label="Fechar"
+      >
+        ×
+      </button>
+
+      <div class="dialog-heading">
+        <p class="eyebrow">Mensagem personalizada</p>
+        <h2 id="messageGuestName">Convite</h2>
+      </div>
+
+      <textarea id="messagePreview" rows="16"></textarea>
+
+      <div class="dialog-actions">
+        <button class="button button-secondary" id="copyMessageButton" type="button">
+          Copiar mensagem
+        </button>
+
+        <button class="button button-primary" id="openWhatsappButton" type="button">
+          Abrir WhatsApp
+        </button>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog id="confirmDialog" class="admin-dialog confirm-dialog">
+    <div class="dialog-shell compact">
+      <p class="eyebrow">Confirmação</p>
+      <h2 id="confirmDialogTitle">Confirmar ação</h2>
+      <p id="confirmDialogMessage"></p>
+
+      <div class="dialog-actions">
+        <button class="button button-secondary" id="cancelConfirm" type="button">
+          Cancelar
+        </button>
+
+        <button class="button button-danger" id="acceptConfirm" type="button">
+          Confirmar
+        </button>
+      </div>
+    </div>
+  </dialog>
+
+  <script type="module" src="./assets/js/admin-auth.js"></script>
+  <script type="module" src="./assets/js/admin-convites.js"></script>
+</body>
+</html>
