@@ -135,6 +135,10 @@
               <button class="button button-secondary" id="sendNextButton" type="button">
                 Enviar próximo convite
               </button>
+
+              <button class="button button-reminder" id="sendNextReminderButton" type="button">
+                Lembrete de confirmação
+              </button>
             </div>
           </div>
 
@@ -159,6 +163,11 @@
           <article>
             <small>Enviados</small>
             <strong id="statSent">0</strong>
+          </article>
+
+          <article>
+            <small>Aguardando confirmação</small>
+            <strong id="statWaiting">0</strong>
           </article>
 
           <article>
@@ -200,6 +209,44 @@
 
             <button class="button button-primary" id="saveTemplateButton" type="button">
               Salvar mensagem
+            </button>
+          </div>
+        </section>
+
+        <section class="message-template-card reminder-template-card">
+          <div class="message-template-heading">
+            <div>
+              <p class="eyebrow">Lembrete de confirmação</p>
+              <h2>Confirmar presença até 31/08</h2>
+              <p>
+                Este texto será usado somente para convidados que ainda
+                estiverem aguardando resposta.
+              </p>
+            </div>
+
+            <button class="button button-secondary" id="restoreReminderButton" type="button">
+              Restaurar padrão
+            </button>
+          </div>
+
+          <textarea id="reminderTemplate" rows="11" maxlength="1800"></textarea>
+
+          <div class="template-tags">
+            <button type="button" data-reminder-variable="{nome}">{nome}</button>
+            <button type="button" data-reminder-variable="{evento}">{evento}</button>
+            <button type="button" data-reminder-variable="{data}">{data}</button>
+            <button type="button" data-reminder-variable="{horario}">{horario}</button>
+            <button type="button" data-reminder-variable="{local}">{local}</button>
+            <button type="button" data-reminder-variable="{link}">{link}</button>
+          </div>
+
+          <div class="template-footer">
+            <small id="reminderTemplateStatus">
+              Mensagem salva neste dispositivo.
+            </small>
+
+            <button class="button button-primary" id="saveReminderButton" type="button">
+              Salvar lembrete
             </button>
           </div>
         </section>
@@ -372,7 +419,7 @@
       </button>
 
       <div class="dialog-heading">
-        <p class="eyebrow">Mensagem personalizada</p>
+        <p class="eyebrow" id="messageDialogEyebrow">Mensagem personalizada</p>
         <h2 id="messageGuestName">Convite</h2>
       </div>
 

@@ -4,7 +4,8 @@ import {
   doc,
   getDoc,
   serverTimestamp,
-  setDoc
+  setDoc,
+  updateDoc
 } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 
 const EVENTS = {
@@ -40,6 +41,12 @@ const consultFeedback = document.querySelector("#consultFeedback");
 const consultResult = document.querySelector("#consultResult");
 const copyProtocolButton = document.querySelector("#copyProtocol");
 const copyFeedback = document.querySelector("#copyFeedback");
+
+const invitationId = new URLSearchParams(window.location.search)
+  .get("convite")
+  ?.trim() || "";
+
+let invitationGuest = null;
 
 function normalizeText(value = "") {
   return String(value).trim().replace(/\s+/g, " ");
@@ -208,6 +215,79 @@ async function getUniqueProtocol() {
   throw new Error("Não foi possível gerar um protocolo único.");
 }
 
+async function loadInvitationFromUrl() {
+  if (!invitationId) return;
+
+  try {
+    const snapshot = await getDoc(
+      doc(db, "invitationGuests", invitationId)
+    );
+
+    if (!snapshot.exists()) return;
+
+    invitationGuest = snapshot.data();
+
+    if (invitationGuest.name && !form.guestName.value) {
+      form.guestName.value = invitationGuest.name;
+    }
+
+    if (invitationGuest.phone && !form.phone.value) {
+      form.phone.value = formatPhone(invitationGuest.phone);
+    }
+
+    if (EVENTS[invitationGuest.eventId]) {
+      const eventInput = form.querySelector(
+        `input[name="eventId"][value="${invitationGuest.eventId}"]`
+      );
+
+      if (eventInput) eventInput.checked = true;
+    }
+
+    if (
+      Number.isFinite(Number(invitationGuest.adults)) &&
+      Number(invitationGuest.adults) > 0
+    ) {
+      form.adults.value = Number(invitationGuest.adults);
+    }
+
+    if (
+      Number.isFinite(Number(invitationGuest.children)) &&
+      Number(invitationGuest.children) >= 0
+    ) {
+      form.children.value = Number(invitationGuest.children);
+    }
+  } catch (error) {
+    console.warn(
+      "[RSVP] Não foi possível carregar o convite individual:",
+      error
+    );
+  }
+}
+
+async function syncInvitationGuest(data, protocol) {
+  if (!invitationId) return;
+
+  const confirmed = data.attendanceStatus === "confirmed";
+
+  await updateDoc(
+    doc(db, "invitationGuests", invitationId),
+    {
+      confirmationStatus: confirmed ? "confirmed" : "declined",
+      rsvpId: protocol,
+      rsvpProtocol: protocol,
+      name: data.guestName,
+      confirmedPhone: data.phone,
+      adults: data.adults,
+      children: data.children,
+      peopleCount: data.totalGuests,
+      confirmedAt: confirmed ? serverTimestamp() : null,
+      declinedAt: confirmed ? null : serverTimestamp(),
+      confirmationSource: "public-site",
+      updatedAt: serverTimestamp()
+    }
+  );
+}
+
 async function saveRsvp(event) {
   event.preventDefault();
 
@@ -247,12 +327,18 @@ async function saveRsvp(event) {
         : 0,
       consent: true,
       source: "public-site",
+      invitationId: invitationId || null,
+      invitationLinked: Boolean(invitationId),
       active: true,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
     };
 
     await setDoc(doc(db, "rsvps", protocol), data);
+
+    if (invitationId) {
+      await syncInvitationGuest(data, protocol);
+    }
 
     generatedProtocol.textContent = protocol;
     successTitle.textContent = confirmed
@@ -267,6 +353,16 @@ async function saveRsvp(event) {
     form.reset();
     toggleGuestDetails();
     applyEventFromUrl();
+
+    if (invitationGuest?.eventId && EVENTS[invitationGuest.eventId]) {
+      const invitationEventInput = form.querySelector(
+        `input[name="eventId"][value="${invitationGuest.eventId}"]`
+      );
+
+      if (invitationEventInput) {
+        invitationEventInput.checked = true;
+      }
+    }
 
     successSection.scrollIntoView({
       behavior: "smooth",
@@ -408,3 +504,4 @@ copyProtocolButton?.addEventListener("click", copyProtocol);
 
 applyEventFromUrl();
 toggleGuestDetails();
+loadInvitationFromUrl();

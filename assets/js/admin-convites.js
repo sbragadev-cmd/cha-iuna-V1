@@ -26,6 +26,27 @@ Para confirmar sua presença, acesse:
 
 Esperamos você para compartilhar esse momento tão especial conosco! 🧺🌸`;
 
+const DEFAULT_REMINDER_TEMPLATE = `Olá, {nome}! 💜
+
+Estamos fechando com muito carinho os preparativos para o Piquenique de Boas-vindas da Iúna. 🧺🌸
+
+Para conseguirmos organizar tudo direitinho, pedimos que você confirme sua presença até o dia 31/08.
+
+📍 {evento}
+📅 {data}
+🕒 {horario}
+🌿 {local}
+
+É rapidinho! Confirme por aqui:
+{link}
+
+Se você já confirmou, pode desconsiderar esta mensagem.
+
+Estamos muito felizes em compartilhar esse momento tão especial com você!
+
+Com carinho,
+Família da Iúna 💜`;
+
 const EVENTS = {
   bage: {
     label: "Bagé",
@@ -47,6 +68,7 @@ const SITE_URL = "https://cha-iuna.vercel.app";
 const state = {
   guests: [],
   currentGuest: null,
+  messageMode: "invite",
   confirmAction: null,
   unsubscribe: null
 };
@@ -65,6 +87,7 @@ const profileAvatar = document.querySelector("#profileAvatar");
 const statTotal = document.querySelector("#statTotal");
 const statPending = document.querySelector("#statPending");
 const statSent = document.querySelector("#statSent");
+const statWaiting = document.querySelector("#statWaiting");
 const statConfirmed = document.querySelector("#statConfirmed");
 const pendingBadge = document.querySelector("#pendingBadge");
 
@@ -72,6 +95,11 @@ const messageTemplate = document.querySelector("#messageTemplate");
 const saveTemplateButton = document.querySelector("#saveTemplateButton");
 const restoreTemplateButton = document.querySelector("#restoreTemplateButton");
 const templateStatus = document.querySelector("#templateStatus");
+
+const reminderTemplate = document.querySelector("#reminderTemplate");
+const saveReminderButton = document.querySelector("#saveReminderButton");
+const restoreReminderButton = document.querySelector("#restoreReminderButton");
+const reminderTemplateStatus = document.querySelector("#reminderTemplateStatus");
 
 const guestSearch = document.querySelector("#guestSearch");
 const eventFilter = document.querySelector("#eventFilter");
@@ -83,6 +111,7 @@ const pageFeedback = document.querySelector("#pageFeedback");
 const newGuestButton = document.querySelector("#newGuestButton");
 const newGuestButtonSecondary = document.querySelector("#newGuestButtonSecondary");
 const sendNextButton = document.querySelector("#sendNextButton");
+const sendNextReminderButton = document.querySelector("#sendNextReminderButton");
 
 const guestDialog = document.querySelector("#guestDialog");
 const guestForm = document.querySelector("#guestForm");
@@ -101,6 +130,7 @@ const guestFormFeedback = document.querySelector("#guestFormFeedback");
 
 const messageDialog = document.querySelector("#messageDialog");
 const closeMessageDialog = document.querySelector("#closeMessageDialog");
+const messageDialogEyebrow = document.querySelector("#messageDialogEyebrow");
 const messageGuestName = document.querySelector("#messageGuestName");
 const messagePreview = document.querySelector("#messagePreview");
 const copyMessageButton = document.querySelector("#copyMessageButton");
@@ -163,16 +193,53 @@ function getTemplate() {
   return localStorage.getItem("iuna-invitation-template") || DEFAULT_TEMPLATE;
 }
 
-function createMessage(guest) {
+function getReminderTemplate() {
+  return (
+    localStorage.getItem("iuna-reminder-template") ||
+    DEFAULT_REMINDER_TEMPLATE
+  );
+}
+
+function createConfirmationLink(guestId) {
+  const url = new URL(
+    "/confirmar-presenca.html",
+    SITE_URL
+  );
+
+  url.searchParams.set(
+    "convite",
+    guestId
+  );
+
+  return url.href;
+}
+
+function fillMessageTemplate(template, guest, guestId) {
   const event = EVENTS[guest.eventId] || EVENTS.bage;
 
-  return getTemplate()
+  return template
     .replaceAll("{nome}", guest.name || "convidado")
     .replaceAll("{evento}", event.label)
     .replaceAll("{data}", event.date)
     .replaceAll("{horario}", event.time)
     .replaceAll("{local}", event.location)
-    .replaceAll("{link}", SITE_URL);
+    .replaceAll("{link}", createConfirmationLink(guestId));
+}
+
+function createMessage(guest, guestId) {
+  return fillMessageTemplate(
+    getTemplate(),
+    guest,
+    guestId
+  );
+}
+
+function createReminderMessage(guest, guestId) {
+  return fillMessageTemplate(
+    getReminderTemplate(),
+    guest,
+    guestId
+  );
 }
 
 function updateProfile(detail) {
@@ -203,6 +270,11 @@ function updateStats() {
   const sent = state.guests.filter(
     (item) => item.data.invitationStatus === "sent"
   ).length;
+  const waiting = state.guests.filter(
+    (item) =>
+      (item.data.confirmationStatus || "waiting") === "waiting"
+  ).length;
+
   const confirmed = state.guests.filter(
     (item) => item.data.confirmationStatus === "confirmed"
   ).length;
@@ -210,6 +282,7 @@ function updateStats() {
   statTotal.textContent = total;
   statPending.textContent = pending;
   statSent.textContent = sent;
+  statWaiting.textContent = waiting;
   statConfirmed.textContent = confirmed;
   pendingBadge.textContent = pending;
 }
@@ -263,6 +336,7 @@ function renderGuests() {
             <span class="guest-cell">
               <strong>${escapeHtml(data.name || "Sem nome")}</strong>
               <small>${escapeHtml(data.phone || "Sem telefone")} • ${escapeHtml(data.group || "Outros")}</small>
+              <small class="invite-link-mini">${escapeHtml(createConfirmationLink(id))}</small>
             </span>
           </td>
 
@@ -292,6 +366,7 @@ function renderGuests() {
           <td>
             <div class="invite-actions">
               <button class="invite-action primary open-message" data-id="${escapeHtml(id)}" type="button">WhatsApp</button>
+              <button class="invite-action send-reminder" data-id="${escapeHtml(id)}" type="button">Lembrete</button>
               <button class="invite-action copy-message" data-id="${escapeHtml(id)}" type="button">Copiar</button>
               <button class="invite-action edit-guest" data-id="${escapeHtml(id)}" type="button">Editar</button>
               <button class="invite-action mark-sent" data-id="${escapeHtml(id)}" type="button">
@@ -434,10 +509,28 @@ async function saveGuest(event) {
   }
 }
 
-function openMessage(guest) {
+function openMessage(guest, mode = "invite") {
   state.currentGuest = guest;
-  messageGuestName.textContent = `Convite para ${guest.data.name || "convidado"}`;
-  messagePreview.value = createMessage(guest.data);
+  state.messageMode = mode;
+
+  const isReminder =
+    mode === "reminder";
+
+  messageDialogEyebrow.textContent =
+    isReminder
+      ? "Lembrete de confirmação"
+      : "Mensagem personalizada";
+
+  messageGuestName.textContent =
+    isReminder
+      ? `Lembrete para ${guest.data.name || "convidado"}`
+      : `Convite para ${guest.data.name || "convidado"}`;
+
+  messagePreview.value =
+    isReminder
+      ? createReminderMessage(guest.data, guest.id)
+      : createMessage(guest.data, guest.id);
+
   messageDialog.showModal();
   document.body.classList.add("modal-open");
 }
@@ -460,14 +553,24 @@ async function openWhatsapp() {
     return;
   }
 
+  const updatePayload = {
+    invitationStatus: "sent",
+    updatedAt: serverTimestamp()
+  };
+
+  if (state.messageMode === "reminder") {
+    updatePayload.lastReminderAt = serverTimestamp();
+    updatePayload.lastReminderMessage = message;
+    updatePayload.reminderCount =
+      Number(guest.data.reminderCount || 0) + 1;
+  } else {
+    updatePayload.invitationSentAt = serverTimestamp();
+    updatePayload.lastInvitationMessage = message;
+  }
+
   await updateDoc(
     doc(db, "invitationGuests", guest.id),
-    {
-      invitationStatus: "sent",
-      invitationSentAt: serverTimestamp(),
-      lastInvitationMessage: message,
-      updatedAt: serverTimestamp()
-    }
+    updatePayload
   );
 
   window.open(
@@ -507,6 +610,7 @@ async function runConfirmation() {
 }
 
 messageTemplate.value = getTemplate();
+reminderTemplate.value = getReminderTemplate();
 
 saveTemplateButton.addEventListener("click", () => {
   localStorage.setItem(
@@ -524,6 +628,59 @@ saveTemplateButton.addEventListener("click", () => {
 restoreTemplateButton.addEventListener("click", () => {
   messageTemplate.value = DEFAULT_TEMPLATE;
   localStorage.setItem("iuna-invitation-template", DEFAULT_TEMPLATE);
+});
+
+saveReminderButton.addEventListener("click", () => {
+  localStorage.setItem(
+    "iuna-reminder-template",
+    reminderTemplate.value.trim() || DEFAULT_REMINDER_TEMPLATE
+  );
+
+  reminderTemplateStatus.textContent =
+    "Lembrete salvo com sucesso.";
+
+  window.setTimeout(() => {
+    reminderTemplateStatus.textContent =
+      "Mensagem salva neste dispositivo.";
+  }, 1800);
+});
+
+restoreReminderButton.addEventListener("click", () => {
+  reminderTemplate.value =
+    DEFAULT_REMINDER_TEMPLATE;
+
+  localStorage.setItem(
+    "iuna-reminder-template",
+    DEFAULT_REMINDER_TEMPLATE
+  );
+});
+
+document.querySelectorAll("[data-reminder-variable]").forEach((button) => {
+  button.addEventListener("click", () => {
+    const variable =
+      button.dataset.reminderVariable;
+
+    const start =
+      reminderTemplate.selectionStart;
+
+    const end =
+      reminderTemplate.selectionEnd;
+
+    const value =
+      reminderTemplate.value;
+
+    reminderTemplate.value =
+      value.slice(0, start) +
+      variable +
+      value.slice(end);
+
+    reminderTemplate.focus();
+
+    reminderTemplate.setSelectionRange(
+      start + variable.length,
+      start + variable.length
+    );
+  });
 });
 
 document.querySelectorAll("[data-variable]").forEach((button) => {
@@ -563,6 +720,22 @@ sendNextButton.addEventListener("click", () => {
   openMessage(next);
 });
 
+sendNextReminderButton.addEventListener("click", () => {
+  const next = state.guests.find(
+    (item) =>
+      item.data.invitationStatus === "sent" &&
+      (item.data.confirmationStatus || "waiting") === "waiting"
+  );
+
+  if (!next) {
+    pageFeedback.textContent =
+      "Não há convidados aguardando confirmação para receber lembrete.";
+    return;
+  }
+
+  openMessage(next, "reminder");
+});
+
 closeGuestDialog.addEventListener("click", closeGuestForm);
 guestForm.addEventListener("submit", saveGuest);
 
@@ -586,6 +759,7 @@ responseFilter.addEventListener("change", renderGuests);
 
 guestsTableBody.addEventListener("click", async (event) => {
   const openButton = event.target.closest(".open-message");
+  const reminderButton = event.target.closest(".send-reminder");
   const copyButton = event.target.closest(".copy-message");
   const editButton = event.target.closest(".edit-guest");
   const sentButton = event.target.closest(".mark-sent");
@@ -593,6 +767,7 @@ guestsTableBody.addEventListener("click", async (event) => {
 
   const id =
     openButton?.dataset.id ||
+    reminderButton?.dataset.id ||
     copyButton?.dataset.id ||
     editButton?.dataset.id ||
     sentButton?.dataset.id ||
@@ -605,8 +780,21 @@ guestsTableBody.addEventListener("click", async (event) => {
 
   if (openButton) openMessage(guest);
 
+  if (reminderButton) {
+    if (
+      (guest.data.confirmationStatus || "waiting") !== "waiting"
+    ) {
+      pageFeedback.textContent =
+        `${guest.data.name} já respondeu ao convite.`;
+    } else {
+      openMessage(guest, "reminder");
+    }
+  }
+
   if (copyButton) {
-    await navigator.clipboard.writeText(createMessage(guest.data));
+    await navigator.clipboard.writeText(
+      createMessage(guest.data, guest.id)
+    );
     pageFeedback.textContent = `Mensagem de ${guest.data.name} copiada.`;
   }
 

@@ -331,3 +331,60 @@
     grid-column: auto;
   }
 }
+
+
+/* =========================================================
+   LEMBRETES E CONFIRMAÇÃO AUTOMÁTICA
+========================================================= */
+
+.invite-stats {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.button-reminder {
+  color: #6d4d10;
+  border: 1px solid rgba(231, 185, 86, 0.48);
+  background: #fff2c9;
+}
+
+.button-reminder:hover {
+  background: #ffe9a4;
+}
+
+.reminder-template-card {
+  border-color: rgba(231, 185, 86, 0.32);
+  background:
+    linear-gradient(
+      145deg,
+      #fffef9,
+      #fff9e9
+    );
+}
+
+.invite-status.reminded {
+  color: #735810;
+  background: #fff1bc;
+}
+
+.invite-link-mini {
+  display: block;
+  max-width: 220px;
+  margin-top: 4px;
+  overflow: hidden;
+  color: #8d8091;
+  font-size: 0.58rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 1120px) {
+  .invite-stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .invite-stats {
+    grid-template-columns: 1fr 1fr;
+  }
+}
