@@ -48,6 +48,7 @@ const invitationId = new URLSearchParams(window.location.search)
 
 let invitationGuest = null;
 
+
 function normalizeText(value = "") {
   return String(value).trim().replace(/\s+/g, " ");
 }
@@ -215,6 +216,7 @@ async function getUniqueProtocol() {
   throw new Error("Não foi possível gerar um protocolo único.");
 }
 
+
 async function loadInvitationFromUrl() {
   if (!invitationId) return;
 
@@ -223,15 +225,21 @@ async function loadInvitationFromUrl() {
       doc(db, "invitationGuests", invitationId)
     );
 
-    if (!snapshot.exists()) return;
+    if (!snapshot.exists()) {
+      console.warn("[RSVP] Convite individual não encontrado:", invitationId);
+      return;
+    }
 
-    invitationGuest = snapshot.data();
+    invitationGuest = {
+      id: snapshot.id,
+      ...snapshot.data()
+    };
 
-    if (invitationGuest.name && !form.guestName.value) {
+    if (invitationGuest.name) {
       form.guestName.value = invitationGuest.name;
     }
 
-    if (invitationGuest.phone && !form.phone.value) {
+    if (invitationGuest.phone) {
       form.phone.value = formatPhone(invitationGuest.phone);
     }
 
@@ -240,52 +248,99 @@ async function loadInvitationFromUrl() {
         `input[name="eventId"][value="${invitationGuest.eventId}"]`
       );
 
-      if (eventInput) eventInput.checked = true;
+      if (eventInput) {
+        eventInput.checked = true;
+      }
     }
 
-    if (
-      Number.isFinite(Number(invitationGuest.adults)) &&
-      Number(invitationGuest.adults) > 0
-    ) {
+    if (Number(invitationGuest.adults) > 0) {
       form.adults.value = Number(invitationGuest.adults);
     }
 
-    if (
-      Number.isFinite(Number(invitationGuest.children)) &&
-      Number(invitationGuest.children) >= 0
-    ) {
-      form.children.value = Number(invitationGuest.children);
+    if (Number(invitationGuest.children) >= 0) {
+      form.children.value = Number(invitationGuest.children || 0);
     }
   } catch (error) {
-    console.warn(
-      "[RSVP] Não foi possível carregar o convite individual:",
-      error
-    );
+    console.warn("[RSVP] Erro ao carregar convite individual:", error);
   }
+}
+
+async function getProtocolForInvitation() {
+  const existingProtocol =
+    invitationGuest?.rsvpProtocol ||
+    invitationGuest?.rsvpId ||
+    "";
+
+  if (existingProtocol) {
+    try {
+      const existing = await getDoc(
+        doc(db, "rsvps", existingProtocol)
+      );
+
+      if (existing.exists()) {
+        return {
+          protocol: existingProtocol,
+          isExisting: true
+        };
+      }
+    } catch (error) {
+      console.warn("[RSVP] Não foi possível validar RSVP anterior:", error);
+    }
+  }
+
+  return {
+    protocol: await getUniqueProtocol(),
+    isExisting: false
+  };
 }
 
 async function syncInvitationGuest(data, protocol) {
   if (!invitationId) return;
 
-  const confirmed = data.attendanceStatus === "confirmed";
+  const confirmed =
+    data.attendanceStatus === "confirmed";
 
-  await updateDoc(
-    doc(db, "invitationGuests", invitationId),
-    {
-      confirmationStatus: confirmed ? "confirmed" : "declined",
-      rsvpId: protocol,
-      rsvpProtocol: protocol,
-      name: data.guestName,
-      confirmedPhone: data.phone,
-      adults: data.adults,
-      children: data.children,
-      peopleCount: data.totalGuests,
-      confirmedAt: confirmed ? serverTimestamp() : null,
-      declinedAt: confirmed ? null : serverTimestamp(),
-      confirmationSource: "public-site",
-      updatedAt: serverTimestamp()
-    }
-  );
+  const payload = {
+    confirmationStatus:
+      confirmed ? "confirmed" : "declined",
+
+    rsvpId: protocol,
+    rsvpProtocol: protocol,
+
+    adults: Number(data.adults || 0),
+    children: Number(data.children || 0),
+    peopleCount: Number(data.totalGuests || 0),
+
+    confirmedPhone: data.phone,
+    confirmationSource: "public-site",
+
+    updatedAt: serverTimestamp()
+  };
+
+  if (confirmed) {
+    payload.confirmedAt = serverTimestamp();
+    payload.declinedAt = null;
+  } else {
+    payload.declinedAt = serverTimestamp();
+    payload.confirmedAt = null;
+  }
+
+  try {
+    await updateDoc(
+      doc(db, "invitationGuests", invitationId),
+      payload
+    );
+  } catch (error) {
+    /*
+     * A confirmação NÃO deve falhar só porque o vínculo
+     * com invitationGuests foi bloqueado pelas regras.
+     * O admin-convites fará reconciliação pelo RSVP.
+     */
+    console.warn(
+      "[RSVP] Confirmação salva, mas convite não pôde ser atualizado:",
+      error
+    );
+  }
 }
 
 async function saveRsvp(event) {
@@ -302,8 +357,13 @@ async function saveRsvp(event) {
   try {
     const eventId = getCheckedValue("eventId");
     const attendanceStatus = getCheckedValue("attendanceStatus");
-    const protocol = await getUniqueProtocol();
-    const confirmed = attendanceStatus === "confirmed";
+    const {
+      protocol,
+      isExisting
+    } = await getProtocolForInvitation();
+
+    const confirmed =
+      attendanceStatus === "confirmed";
 
     const data = {
       protocol,
@@ -327,18 +387,28 @@ async function saveRsvp(event) {
         : 0,
       consent: true,
       source: "public-site",
-      invitationId: invitationId || null,
+
+      invitationId: invitationId || "",
       invitationLinked: Boolean(invitationId),
+
       active: true,
-      createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
     };
 
-    await setDoc(doc(db, "rsvps", protocol), data);
-
-    if (invitationId) {
-      await syncInvitationGuest(data, protocol);
+    if (!isExisting) {
+      data.createdAt = serverTimestamp();
     }
+
+    await setDoc(
+      doc(db, "rsvps", protocol),
+      data,
+      { merge: true }
+    );
+
+    await syncInvitationGuest(
+      data,
+      protocol
+    );
 
     generatedProtocol.textContent = protocol;
     successTitle.textContent = confirmed
@@ -354,10 +424,14 @@ async function saveRsvp(event) {
     toggleGuestDetails();
     applyEventFromUrl();
 
-    if (invitationGuest?.eventId && EVENTS[invitationGuest.eventId]) {
-      const invitationEventInput = form.querySelector(
-        `input[name="eventId"][value="${invitationGuest.eventId}"]`
-      );
+    if (
+      invitationGuest?.eventId &&
+      EVENTS[invitationGuest.eventId]
+    ) {
+      const invitationEventInput =
+        form.querySelector(
+          `input[name="eventId"][value="${invitationGuest.eventId}"]`
+        );
 
       if (invitationEventInput) {
         invitationEventInput.checked = true;

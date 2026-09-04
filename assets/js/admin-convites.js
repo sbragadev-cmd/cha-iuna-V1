@@ -71,8 +71,10 @@ const state = {
   currentGuest: null,
   messageMode: "invite",
   confirmAction: null,
+
   unsubscribeGuests: null,
   unsubscribeRsvps: null,
+
   syncing: new Set()
 };
 
@@ -271,126 +273,231 @@ function onlyDigits(value = "") {
 }
 
 function normalizeComparablePhone(value = "") {
-  const digits = onlyDigits(value);
+  let digits = onlyDigits(value);
 
-  if (digits.startsWith("55") && digits.length >= 12) {
-    return digits.slice(2);
+  if (
+    digits.startsWith("55") &&
+    digits.length >= 12
+  ) {
+    digits = digits.slice(2);
   }
 
   return digits;
 }
 
-function getRsvpForGuest(guest) {
-  const guestId = guest.id;
-  const data = guest.data;
+function timestampMillis(value) {
+  if (!value) return 0;
 
+  if (
+    typeof value.toMillis === "function"
+  ) {
+    return value.toMillis();
+  }
+
+  if (
+    typeof value.toDate === "function"
+  ) {
+    return value.toDate().getTime();
+  }
+
+  return 0;
+}
+
+function findRsvpForGuest(guest) {
   /*
-   * 1. Melhor vínculo: invitationId gravado no RSVP.
+   * 1) Vínculo explícito pelo ID do convite.
    */
-  const directMatch = state.rsvps.find(
-    (item) =>
-      String(item.data.invitationId || "") === guestId
-  );
+  const directMatches = state.rsvps
+    .filter(
+      (item) =>
+        String(item.data.invitationId || "") === guest.id
+    )
+    .sort(
+      (a, b) =>
+        timestampMillis(
+          b.data.updatedAt || b.data.createdAt
+        ) -
+        timestampMillis(
+          a.data.updatedAt || a.data.createdAt
+        )
+    );
 
-  if (directMatch) {
-    return directMatch;
+  if (directMatches.length) {
+    return {
+      rsvp: directMatches[0],
+      matchType: "invitationId"
+    };
   }
 
   /*
-   * 2. Compatibilidade com RSVP que não recebeu invitationId:
+   * 2) Compatibilidade com confirmações antigas:
    * telefone + evento.
+   *
+   * Só fazemos isso quando esse telefone/evento identifica
+   * exatamente UM convidado. Assim evitamos atribuir uma
+   * confirmação para duas pessoas da mesma família.
    */
-  const guestPhone = normalizeComparablePhone(
-    data.phoneDigits || data.phone
-  );
+  const guestPhone =
+    normalizeComparablePhone(
+      guest.data.phoneDigits ||
+      guest.data.phone
+    );
 
   if (!guestPhone) {
     return null;
   }
 
-  return state.rsvps.find((item) => {
-    const rsvpPhone = normalizeComparablePhone(
-      item.data.phoneDigits || item.data.phone
+  const sameGuestCandidates =
+    state.guests.filter((candidate) => {
+      const candidatePhone =
+        normalizeComparablePhone(
+          candidate.data.phoneDigits ||
+          candidate.data.phone
+        );
+
+      return (
+        candidatePhone === guestPhone &&
+        candidate.data.eventId ===
+          guest.data.eventId
+      );
+    });
+
+  if (sameGuestCandidates.length !== 1) {
+    return null;
+  }
+
+  const matches = state.rsvps
+    .filter((item) => {
+      const rsvpPhone =
+        normalizeComparablePhone(
+          item.data.phoneDigits ||
+          item.data.phone
+        );
+
+      return (
+        rsvpPhone === guestPhone &&
+        item.data.eventId ===
+          guest.data.eventId
+      );
+    })
+    .sort(
+      (a, b) =>
+        timestampMillis(
+          b.data.updatedAt || b.data.createdAt
+        ) -
+        timestampMillis(
+          a.data.updatedAt || a.data.createdAt
+        )
     );
 
-    const samePhone =
-      rsvpPhone &&
-      rsvpPhone === guestPhone;
+  if (!matches.length) {
+    return null;
+  }
 
-    const sameEvent =
-      !data.eventId ||
-      !item.data.eventId ||
-      data.eventId === item.data.eventId;
-
-    return samePhone && sameEvent;
-  }) || null;
+  return {
+    rsvp: matches[0],
+    matchType: "phone-event"
+  };
 }
 
 function getEffectiveGuestData(guest) {
-  const rsvp = getRsvpForGuest(guest);
+  const match = findRsvpForGuest(guest);
 
-  if (!rsvp) {
+  if (!match) {
     return {
       ...guest.data,
-      matchedRsvp: null
+      matchedRsvp: null,
+      rsvpMatchType: ""
     };
   }
 
-  const rsvpData = rsvp.data;
-  const confirmed =
-    rsvpData.attendanceStatus === "confirmed";
+  const rsvpData =
+    match.rsvp.data;
+
+  const status =
+    rsvpData.attendanceStatus === "declined"
+      ? "declined"
+      : "confirmed";
 
   return {
     ...guest.data,
 
-    confirmationStatus:
-      confirmed
-        ? "confirmed"
-        : "declined",
+    confirmationStatus: status,
 
     adults:
-      Number(rsvpData.adults ?? guest.data.adults ?? 0),
+      Number(
+        rsvpData.adults ??
+        guest.data.adults ??
+        0
+      ),
 
     children:
-      Number(rsvpData.children ?? guest.data.children ?? 0),
+      Number(
+        rsvpData.children ??
+        guest.data.children ??
+        0
+      ),
 
     peopleCount:
       Number(
         rsvpData.totalGuests ??
         (
-          Number(rsvpData.adults ?? 0) +
-          Number(rsvpData.children ?? 0)
+          Number(rsvpData.adults || 0) +
+          Number(rsvpData.children || 0)
         )
       ),
 
     rsvpProtocol:
       rsvpData.protocol ||
-      rsvp.id,
+      match.rsvp.id,
 
-    matchedRsvp: rsvp
+    matchedRsvp:
+      match.rsvp,
+
+    rsvpMatchType:
+      match.matchType
   };
 }
 
-async function persistRsvpMatch(guest, effectiveData) {
-  const rsvp = effectiveData.matchedRsvp;
+async function persistRsvpMatch(
+  guest,
+  effectiveData
+) {
+  const matchedRsvp =
+    effectiveData.matchedRsvp;
 
-  if (!rsvp) return;
+  if (!matchedRsvp) {
+    return;
+  }
 
   const currentStatus =
-    guest.data.confirmationStatus || "waiting";
+    guest.data.confirmationStatus ||
+    "waiting";
 
-  const desiredStatus =
-    effectiveData.confirmationStatus;
+  const currentProtocol =
+    String(
+      guest.data.rsvpProtocol ||
+      guest.data.rsvpId ||
+      ""
+    );
+
+  const desiredProtocol =
+    String(
+      effectiveData.rsvpProtocol ||
+      matchedRsvp.id
+    );
 
   if (
-    currentStatus === desiredStatus &&
-    String(guest.data.rsvpProtocol || "") ===
-      String(effectiveData.rsvpProtocol || "")
+    currentStatus ===
+      effectiveData.confirmationStatus &&
+    currentProtocol ===
+      desiredProtocol
   ) {
     return;
   }
 
-  const syncKey = `${guest.id}:${rsvp.id}`;
+  const syncKey =
+    `${guest.id}:${matchedRsvp.id}`;
 
   if (state.syncing.has(syncKey)) {
     return;
@@ -400,10 +507,14 @@ async function persistRsvpMatch(guest, effectiveData) {
 
   try {
     const payload = {
-      confirmationStatus: desiredStatus,
-      rsvpId: rsvp.id,
+      confirmationStatus:
+        effectiveData.confirmationStatus,
+
+      rsvpId:
+        matchedRsvp.id,
+
       rsvpProtocol:
-        effectiveData.rsvpProtocol || rsvp.id,
+        desiredProtocol,
 
       adults:
         Number(effectiveData.adults || 0),
@@ -412,23 +523,31 @@ async function persistRsvpMatch(guest, effectiveData) {
         Number(effectiveData.children || 0),
 
       peopleCount:
-        Number(effectiveData.peopleCount || 0),
+        Number(
+          effectiveData.peopleCount || 0
+        ),
 
       confirmationSource:
-        "rsvp-auto-match",
+        effectiveData.rsvpMatchType ===
+          "invitationId"
+          ? "linked-rsvp"
+          : "phone-event-repair",
 
       updatedAt:
         serverTimestamp()
     };
 
-    if (desiredStatus === "confirmed") {
+    if (
+      effectiveData.confirmationStatus ===
+      "confirmed"
+    ) {
       payload.confirmedAt =
         serverTimestamp();
-    }
-
-    if (desiredStatus === "declined") {
+      payload.declinedAt = null;
+    } else {
       payload.declinedAt =
         serverTimestamp();
+      payload.confirmedAt = null;
     }
 
     await updateDoc(
@@ -441,7 +560,7 @@ async function persistRsvpMatch(guest, effectiveData) {
     );
   } catch (error) {
     console.warn(
-      "[INVITES] RSVP encontrado, mas não foi possível persistir o vínculo:",
+      "[INVITES] RSVP identificado, mas não foi possível persistir vínculo:",
       error
     );
   } finally {
@@ -449,15 +568,17 @@ async function persistRsvpMatch(guest, effectiveData) {
   }
 }
 
-function reconcileGuestsWithRsvps() {
+function reconcileRsvps() {
   state.guests.forEach((guest) => {
-    const effective =
+    const effectiveData =
       getEffectiveGuestData(guest);
 
-    if (effective.matchedRsvp) {
+    if (
+      effectiveData.matchedRsvp
+    ) {
       persistRsvpMatch(
         guest,
-        effective
+        effectiveData
       );
     }
   });
@@ -467,32 +588,44 @@ function reconcileGuestsWithRsvps() {
 
 function updateStats() {
   const effectiveGuests =
-    state.guests.map((item) => ({
-      ...item,
-      data: getEffectiveGuestData(item)
+    state.guests.map((guest) => ({
+      ...guest,
+      data:
+        getEffectiveGuestData(guest)
     }));
 
-  const total = effectiveGuests.length;
+  const total =
+    effectiveGuests.length;
 
-  const pending = effectiveGuests.filter(
-    (item) =>
-      item.data.invitationStatus !== "sent"
-  ).length;
+  const pending =
+    effectiveGuests.filter(
+      (item) =>
+        item.data.invitationStatus !==
+        "sent"
+    ).length;
 
-  const sent = effectiveGuests.filter(
-    (item) =>
-      item.data.invitationStatus === "sent"
-  ).length;
+  const sent =
+    effectiveGuests.filter(
+      (item) =>
+        item.data.invitationStatus ===
+        "sent"
+    ).length;
 
-  const waiting = effectiveGuests.filter(
-    (item) =>
-      (item.data.confirmationStatus || "waiting") === "waiting"
-  ).length;
+  const waiting =
+    effectiveGuests.filter(
+      (item) =>
+        (
+          item.data.confirmationStatus ||
+          "waiting"
+        ) === "waiting"
+    ).length;
 
-  const confirmed = effectiveGuests.filter(
-    (item) =>
-      item.data.confirmationStatus === "confirmed"
-  ).length;
+  const confirmed =
+    effectiveGuests.filter(
+      (item) =>
+        item.data.confirmationStatus ===
+        "confirmed"
+    ).length;
 
   statTotal.textContent = total;
   statPending.textContent = pending;
@@ -509,7 +642,8 @@ function getFilteredGuests() {
   const selectedResponse = responseFilter.value;
 
   return state.guests.filter((guest) => {
-    const data = getEffectiveGuestData(guest);
+    const data =
+      getEffectiveGuestData(guest);
 
     const searchable = normalizeSearch(
       [data.name, data.phone, data.group, data.notes].join(" ")
@@ -544,8 +678,13 @@ function renderGuests() {
   guestsTableBody.innerHTML = filtered
     .map((guest) => {
       const { id } = guest;
-      const data = getEffectiveGuestData(guest);
-      const event = EVENTS[data.eventId] || EVENTS.bage;
+
+      const data =
+        getEffectiveGuestData(guest);
+
+      const event =
+        EVENTS[data.eventId] ||
+        EVENTS.bage;
       const invitationStatus = data.invitationStatus || "pending";
       const confirmationStatus = data.confirmationStatus || "waiting";
 
@@ -581,7 +720,7 @@ function renderGuests() {
 
             ${
               data.rsvpProtocol
-                ? `<small class="invite-link-mini">Protocolo: ${escapeHtml(data.rsvpProtocol)}</small>`
+                ? `<small class="invite-link-mini">RSVP ${escapeHtml(data.rsvpProtocol)}</small>`
                 : ""
             }
           </td>
@@ -608,68 +747,80 @@ function renderGuests() {
 
 function startListener() {
   const guestsQuery = query(
-    collection(db, "invitationGuests"),
-    orderBy("createdAt", "desc")
+    collection(
+      db,
+      "invitationGuests"
+    ),
+    orderBy(
+      "createdAt",
+      "desc"
+    )
   );
 
   const rsvpsQuery = query(
-    collection(db, "rsvps"),
-    orderBy("createdAt", "desc")
+    collection(
+      db,
+      "rsvps"
+    ),
+    orderBy(
+      "createdAt",
+      "desc"
+    )
   );
 
-  state.unsubscribeGuests = onSnapshot(
-    guestsQuery,
-    (snapshot) => {
-      state.guests = snapshot.docs.map((document) => ({
-        id: document.id,
-        data: document.data()
-      }));
+  state.unsubscribeGuests =
+    onSnapshot(
+      guestsQuery,
+      (snapshot) => {
+        state.guests =
+          snapshot.docs.map(
+            (document) => ({
+              id: document.id,
+              data: document.data()
+            })
+          );
 
-      pageFeedback.textContent = "";
+        pageFeedback.textContent = "";
 
-      reconcileGuestsWithRsvps();
-    },
-    (error) => {
-      console.error(
-        "[INVITES] Erro ao carregar invitationGuests:",
-        error
-      );
+        reconcileRsvps();
+      },
+      (error) => {
+        console.error(
+          "[INVITES] Erro em invitationGuests:",
+          error
+        );
 
-      guestsTableBody.innerHTML = `
-        <tr>
-          <td colspan="7" class="table-empty">
-            Não foi possível carregar a lista de convidados.
-          </td>
-        </tr>
-      `;
+        pageFeedback.textContent =
+          "Não foi possível carregar a lista de convites.";
+      }
+    );
 
-      pageFeedback.textContent =
-        "Verifique as permissões de invitationGuests no Firestore.";
-    }
-  );
+  state.unsubscribeRsvps =
+    onSnapshot(
+      rsvpsQuery,
+      (snapshot) => {
+        state.rsvps =
+          snapshot.docs.map(
+            (document) => ({
+              id: document.id,
+              data: document.data()
+            })
+          );
 
-  state.unsubscribeRsvps = onSnapshot(
-    rsvpsQuery,
-    (snapshot) => {
-      state.rsvps = snapshot.docs.map((document) => ({
-        id: document.id,
-        data: document.data()
-      }));
+        pageFeedback.textContent = "";
 
-      pageFeedback.textContent = "";
+        reconcileRsvps();
+      },
+      (error) => {
+        console.error(
+          "[INVITES] Erro em rsvps:",
+          error
+        );
 
-      reconcileGuestsWithRsvps();
-    },
-    (error) => {
-      console.error(
-        "[INVITES] Erro ao carregar rsvps:",
-        error
-      );
-
-      pageFeedback.textContent =
-        "Os convites foram carregados, mas não foi possível sincronizar as confirmações do site.";
-    }
-  );
+        pageFeedback.textContent =
+          "Os convites abriram, mas a sincronização das confirmações falhou.";
+      }
+    );
 }
 
 function openGuestForm(guest = null) {
@@ -986,8 +1137,12 @@ sendNextReminderButton.addEventListener("click", () => {
         getEffectiveGuestData(item);
 
       return (
-        data.invitationStatus === "sent" &&
-        (data.confirmationStatus || "waiting") === "waiting"
+        data.invitationStatus ===
+          "sent" &&
+        (
+          data.confirmationStatus ||
+          "waiting"
+        ) === "waiting"
       );
     }
   );
@@ -1050,7 +1205,10 @@ guestsTableBody.addEventListener("click", async (event) => {
       getEffectiveGuestData(guest);
 
     if (
-      (effectiveData.confirmationStatus || "waiting") !== "waiting"
+      (
+        effectiveData.confirmationStatus ||
+        "waiting"
+      ) !== "waiting"
     ) {
       pageFeedback.textContent =
         `${guest.data.name} já respondeu ao convite.`;
@@ -1097,7 +1255,11 @@ guestsTableBody.addEventListener("change", async (event) => {
 
 syncButton.addEventListener("click", () => {
   syncButton.classList.add("is-syncing");
-  renderGuests();
+
+  reconcileRsvps();
+
+  pageFeedback.textContent =
+    "Confirmações reconciliadas com a lista de convites.";
 
   window.setTimeout(() => {
     syncButton.classList.remove("is-syncing");
