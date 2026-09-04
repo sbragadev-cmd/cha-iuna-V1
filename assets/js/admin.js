@@ -24,6 +24,7 @@ const SECTION_META = {
 
 const state = {
   rsvps: [],
+  invitationGuests: [],
   gifts: [],
   selections: [],
   messages: [],
@@ -207,15 +208,182 @@ function openSection(sectionId) {
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
-function renderDashboard() {
-  const confirmed = state.rsvps.filter(
-    (item) => item.data.attendanceStatus === "confirmed"
-  );
 
-  const totalPeople = confirmed.reduce(
-    (sum, item) => sum + Number(item.data.totalGuests ?? 0),
-    0
+function normalizeAttendanceStatus(value = "") {
+  const normalized = String(value ?? "")
+    .trim()
+    .toLowerCase();
+
+  if (
+    value === true ||
+    ["confirmed", "confirmado", "confirmada", "sim", "yes"].includes(normalized)
+  ) {
+    return "confirmed";
+  }
+
+  if (
+    value === false ||
+    ["declined", "recusado", "recusada", "nao", "não", "no"].includes(normalized)
+  ) {
+    return "declined";
+  }
+
+  return normalized || "waiting";
+}
+
+function onlyDigits(value = "") {
+  return String(value ?? "").replace(/\D/g, "");
+}
+
+function normalizeComparablePhone(value = "") {
+  let digits = onlyDigits(value);
+
+  if (digits.startsWith("55") && digits.length >= 12) {
+    digits = digits.slice(2);
+  }
+
+  return digits;
+}
+
+function getConfirmedRsvps() {
+  return state.rsvps.filter(
+    (item) =>
+      normalizeAttendanceStatus(
+        item.data.attendanceStatus
+      ) === "confirmed"
   );
+}
+
+function getConfirmedInvitationGuests() {
+  return state.invitationGuests.filter(
+    (item) =>
+      normalizeAttendanceStatus(
+        item.data.confirmationStatus
+      ) === "confirmed"
+  );
+}
+
+function buildConfirmedPeopleSummary() {
+  const rsvps = getConfirmedRsvps();
+  const inviteConfirmed = getConfirmedInvitationGuests();
+
+  const seenInvitationIds = new Set();
+  const seenPhonesByEvent = new Set();
+
+  let responses = 0;
+  let people = 0;
+  let adults = 0;
+  let children = 0;
+
+  const byEvent = {
+    bage: { people: 0, adults: 0, children: 0 },
+    "porto-alegre": { people: 0, adults: 0, children: 0 }
+  };
+
+  /*
+   * Primeiro usamos RSVP, pois é a resposta pública completa.
+   */
+  rsvps.forEach((item) => {
+    const data = item.data;
+
+    const invitationId =
+      String(data.invitationId || "").trim();
+
+    if (invitationId) {
+      seenInvitationIds.add(invitationId);
+    }
+
+    const phoneKey =
+      `${data.eventId || ""}:${normalizeComparablePhone(
+        data.phoneDigits || data.phone
+      )}`;
+
+    if (normalizeComparablePhone(data.phoneDigits || data.phone)) {
+      seenPhonesByEvent.add(phoneKey);
+    }
+
+    const itemAdults = Number(data.adults || 0);
+    const itemChildren = Number(data.children || 0);
+
+    const itemPeople = Number(
+      data.totalGuests ??
+      (itemAdults + itemChildren)
+    );
+
+    responses += 1;
+    people += itemPeople;
+    adults += itemAdults;
+    children += itemChildren;
+
+    if (byEvent[data.eventId]) {
+      byEvent[data.eventId].people += itemPeople;
+      byEvent[data.eventId].adults += itemAdults;
+      byEvent[data.eventId].children += itemChildren;
+    }
+  });
+
+  /*
+   * Depois adicionamos confirmações que existem somente
+   * em invitationGuests, evitando duplicar quem já possui RSVP.
+   */
+  inviteConfirmed.forEach((item) => {
+    const data = item.data;
+
+    if (seenInvitationIds.has(item.id)) {
+      return;
+    }
+
+    const phone = normalizeComparablePhone(
+      data.phoneDigits ||
+      data.confirmedPhone ||
+      data.phone
+    );
+
+    const phoneKey =
+      `${data.eventId || ""}:${phone}`;
+
+    if (phone && seenPhonesByEvent.has(phoneKey)) {
+      return;
+    }
+
+    const itemAdults = Number(data.adults || 0);
+    const itemChildren = Number(data.children || 0);
+
+    const itemPeople = Number(
+      data.peopleCount ??
+      (itemAdults + itemChildren)
+    );
+
+    responses += 1;
+    people += itemPeople;
+    adults += itemAdults;
+    children += itemChildren;
+
+    if (byEvent[data.eventId]) {
+      byEvent[data.eventId].people += itemPeople;
+      byEvent[data.eventId].adults += itemAdults;
+      byEvent[data.eventId].children += itemChildren;
+    }
+  });
+
+  return {
+    responses,
+    people,
+    adults,
+    children,
+    byEvent
+  };
+}
+
+function renderDashboard() {
+  const confirmed =
+    getConfirmedRsvps();
+
+  const summary =
+    buildConfirmedPeopleSummary();
+
+  const totalPeople =
+    summary.people;
 
   const giftUnitsSelected = state.gifts.reduce(
     (sum, item) => sum + getGiftReserved(item.data),
@@ -230,7 +398,9 @@ function renderDashboard() {
     (item) => item.data.approved !== true
   ).length;
 
-  document.querySelector("#kpiRsvps").textContent = state.rsvps.length;
+  document.querySelector("#kpiRsvps").textContent =
+    summary.responses;
+
   document.querySelector("#kpiRsvpsDetail").textContent =
     `${totalPeople} pessoas confirmadas`;
 
@@ -241,31 +411,39 @@ function renderDashboard() {
   document.querySelector("#kpiMessages").textContent = pendingMessages;
   document.querySelector("#kpiGallery").textContent = pendingGallery;
 
-  document.querySelector("#guestsBadge").textContent = state.rsvps.length;
+  document.querySelector("#guestsBadge").textContent =
+    summary.responses;
   document.querySelector("#giftSelectionsBadge").textContent = state.selections.length;
   document.querySelector("#messagesBadge").textContent = pendingMessages;
   document.querySelector("#galleryBadge").textContent = pendingGallery;
 
   ["bage", "porto-alegre"].forEach((eventId) => {
-    const eventConfirmed = confirmed.filter(
-      (item) => item.data.eventId === eventId
-    );
+    const eventSummary =
+      summary.byEvent[eventId] || {
+        people: 0,
+        adults: 0,
+        children: 0
+      };
 
-    const adults = eventConfirmed.reduce(
-      (sum, item) => sum + Number(item.data.adults ?? 0),
-      0
-    );
+    const prefix =
+      eventId === "bage"
+        ? "bage"
+        : "poa";
 
-    const children = eventConfirmed.reduce(
-      (sum, item) => sum + Number(item.data.children ?? 0),
-      0
-    );
+    document.querySelector(
+      `#${prefix}People`
+    ).textContent =
+      eventSummary.people;
 
-    const prefix = eventId === "bage" ? "bage" : "poa";
+    document.querySelector(
+      `#${prefix}Adults`
+    ).textContent =
+      eventSummary.adults;
 
-    document.querySelector(`#${prefix}People`).textContent = adults + children;
-    document.querySelector(`#${prefix}Adults`).textContent = adults;
-    document.querySelector(`#${prefix}Children`).textContent = children;
+    document.querySelector(
+      `#${prefix}Children`
+    ).textContent =
+      eventSummary.children;
   });
 
   renderActivity();
@@ -278,7 +456,9 @@ function renderActivity() {
       icon: "👥",
       title: `${item.data.guestName ?? "Convidado"} respondeu ao convite`,
       detail:
-        item.data.attendanceStatus === "confirmed"
+        normalizeAttendanceStatus(
+          item.data.attendanceStatus
+        ) === "confirmed"
           ? `Presença confirmada em ${item.data.eventLabel ?? "um evento"}`
           : "Informou que não poderá comparecer",
       date: item.data.createdAt
@@ -344,7 +524,12 @@ function renderGuests() {
     return (
       (!term || searchable.includes(term)) &&
       (eventFilter === "all" || data.eventId === eventFilter) &&
-      (statusFilter === "all" || data.attendanceStatus === statusFilter)
+      (
+        statusFilter === "all" ||
+        normalizeAttendanceStatus(
+          data.attendanceStatus
+        ) === statusFilter
+      )
     );
   });
 
@@ -369,7 +554,13 @@ function renderGuests() {
         <td>${escapeHtml(data.eventLabel ?? data.eventId ?? "—")}</td>
         <td>
           <span class="status-pill ${data.attendanceStatus}">
-            ${data.attendanceStatus === "confirmed" ? "Confirmado" : "Não poderá ir"}
+            ${
+              normalizeAttendanceStatus(
+                data.attendanceStatus
+              ) === "confirmed"
+                ? "Confirmado"
+                : "Não poderá ir"
+            }
           </span>
         </td>
         <td>${Number(data.adults ?? 0)}</td>
@@ -715,10 +906,15 @@ function renderAll() {
 }
 
 function subscribeCollection(name, orderField, callback) {
-  const collectionQuery = query(
-    collection(db, name),
-    orderBy(orderField, "desc")
-  );
+  const collectionQuery =
+    orderField
+      ? query(
+          collection(db, name),
+          orderBy(orderField, "desc")
+        )
+      : query(
+          collection(db, name)
+        );
 
   const unsubscribe = onSnapshot(
     collectionQuery,
@@ -740,8 +936,21 @@ function subscribeCollection(name, orderField, callback) {
 }
 
 function startListeners() {
-  subscribeCollection("rsvps", "createdAt", (items) => {
+  /*
+   * Sem orderBy em rsvps para não perder confirmações
+   * antigas que eventualmente não possuam createdAt.
+   */
+  subscribeCollection("rsvps", null, (items) => {
     state.rsvps = items;
+  });
+
+  /*
+   * Também ouvimos invitationGuests, pois alguns convites
+   * podem ter sido confirmados ali mesmo quando o RSVP
+   * não ficou corretamente vinculado.
+   */
+  subscribeCollection("invitationGuests", null, (items) => {
+    state.invitationGuests = items;
   });
 
   subscribeCollection("gifts", "createdAt", (items) => {
