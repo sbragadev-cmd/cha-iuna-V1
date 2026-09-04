@@ -90,17 +90,39 @@ onAuthStateChanged(auth, async (user) => {
   try {
     const adminData = await validateAdmin(user);
 
-    if (loading) loading.hidden = true;
-    if (app) app.hidden = false;
+    if (loading) {
+      loading.hidden = true;
+      loading.style.display = "none";
+    }
+
+    if (app) {
+      app.hidden = false;
+      app.style.display = "";
+    }
 
     exposeAdminSession(user, adminData);
   } catch (error) {
     console.error("[ADMIN AUTH] Acesso recusado:", error);
 
-    await signOut(auth).catch(() => {});
-    window.location.replace(
-      `./login.html?erro=${encodeURIComponent(error.message)}`
-    );
+    if (loading) {
+      const card = loading.querySelector(".admin-loading-card");
+
+      if (card) {
+        card.innerHTML = `
+          <span class="brand-mark large">I</span>
+          <strong>Não foi possível abrir a Área dos Pais</strong>
+          <small>${String(error.message || "Erro de autenticação")}</small>
+        `;
+      }
+    }
+
+    window.setTimeout(async () => {
+      await signOut(auth).catch(() => {});
+
+      window.location.replace(
+        `./login.html?erro=${encodeURIComponent(error.message)}`
+      );
+    }, 1800);
   }
 });
 
