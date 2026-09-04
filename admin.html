@@ -3,31 +3,24 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
   <title>Área dos Pais | Chá da Iúna</title>
-
-  <meta
-    name="description"
-    content="Painel administrativo do Chá da Iúna."
-  >
+  <meta name="description" content="Painel administrativo completo do Chá da Iúna.">
   <meta name="theme-color" content="#5b3e7f">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-
   <link
-    href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap"
+    href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700&display=swap"
     rel="stylesheet"
   >
 
   <link rel="stylesheet" href="./assets/css/admin.css">
-  <link rel="stylesheet" href="./assets/css/admin-gallery.css">
 </head>
 
 <body>
   <div class="admin-loading" id="adminLoading">
     <div class="admin-loading-card">
-      <span class="admin-loading-mark">I</span>
+      <span class="brand-mark large">I</span>
       <strong>Carregando Área dos Pais...</strong>
       <small>Verificando acesso e sincronizando os dados.</small>
     </div>
@@ -36,7 +29,7 @@
   <div class="admin-app" id="adminApp" hidden>
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-brand">
-        <a href="./index.html" aria-label="Voltar para o site">
+        <a href="./index.html">
           <span class="brand-mark">I</span>
           <span>
             <strong>Chá da Iúna</strong>
@@ -57,14 +50,10 @@
           <span class="nav-badge" id="guestsBadge">0</span>
         </button>
 
-        <button
-          class="nav-item"
-          id="openInvitationsPage"
-          type="button"
-        >
+        <button class="nav-item" type="button" data-section="invites">
           <span class="nav-icon">📨</span>
-          <span>Enviar convites</span>
-          <span class="nav-badge">WhatsApp</span>
+          <span>Convites</span>
+          <span class="nav-badge" id="invitesBadge">0</span>
         </button>
 
         <button class="nav-item" type="button" data-section="gifts">
@@ -94,6 +83,11 @@
           <span class="nav-icon">◷</span>
           <span>Eventos</span>
         </button>
+
+        <button class="nav-item" type="button" data-section="settings">
+          <span class="nav-icon">⚙</span>
+          <span>Configurações</span>
+        </button>
       </nav>
 
       <div class="sidebar-footer">
@@ -113,7 +107,7 @@
           class="sidebar-toggle"
           id="sidebarToggle"
           type="button"
-          aria-label="Abrir menu administrativo"
+          aria-label="Abrir menu"
           aria-expanded="false"
         >
           ☰
@@ -141,27 +135,37 @@
       </header>
 
       <main class="admin-content">
+        <!-- DASHBOARD -->
         <section class="admin-section active" id="section-dashboard">
           <div class="welcome-panel">
             <div>
               <p class="eyebrow">Tudo em um só lugar</p>
               <h2>Bem-vindos à Área dos Pais.</h2>
               <p>
-                Acompanhem confirmações, presentes, recadinhos, fotos e os
-                dois encontros da Iúna em tempo real.
+                Acompanhem confirmações, convites, presentes, recadinhos, fotos e os encontros da Iúna em tempo real.
               </p>
             </div>
-
             <span class="welcome-heart">♥</span>
           </div>
 
           <div class="kpi-grid">
-            <article class="kpi-card">
+            <article class="kpi-card clickable" id="kpiConfirmedCard">
               <span class="kpi-icon">👥</span>
               <div>
                 <small>Confirmações recebidas</small>
                 <strong id="kpiRsvps">0</strong>
                 <span id="kpiRsvpsDetail">0 pessoas confirmadas</span>
+                <b>Ver confirmados →</b>
+              </div>
+            </article>
+
+            <article class="kpi-card clickable" id="kpiWaitingCard">
+              <span class="kpi-icon">📨</span>
+              <div>
+                <small>Aguardando confirmação</small>
+                <strong id="kpiWaiting">0</strong>
+                <span>Convidados ainda sem resposta</span>
+                <b>Enviar lembretes →</b>
               </div>
             </article>
 
@@ -177,18 +181,9 @@
             <article class="kpi-card">
               <span class="kpi-icon">✉</span>
               <div>
-                <small>Recadinhos pendentes</small>
-                <strong id="kpiMessages">0</strong>
-                <span>Aguardando aprovação</span>
-              </div>
-            </article>
-
-            <article class="kpi-card">
-              <span class="kpi-icon">▧</span>
-              <div>
-                <small>Fotos pendentes</small>
-                <strong id="kpiGallery">0</strong>
-                <span>Aguardando aprovação</span>
+                <small>Pendências</small>
+                <strong id="kpiPending">0</strong>
+                <span id="kpiPendingDetail">0 recadinhos • 0 fotos</span>
               </div>
             </article>
           </div>
@@ -240,34 +235,34 @@
           </div>
         </section>
 
+        <!-- CONVIDADOS -->
         <section class="admin-section" id="section-guests">
           <div class="section-toolbar">
             <div>
-              <p class="eyebrow">Lista automática</p>
-              <h2>Convidados e confirmações</h2>
-              <p>
-                A lista muda automaticamente quando um convidado confirma ou
-                informa que não poderá comparecer.
-              </p>
+              <p class="eyebrow">Confirmações</p>
+              <h2>Convidados e presenças</h2>
+              <p>Lista consolidada de confirmações do site e dos convites.</p>
             </div>
           </div>
 
-          <div class="filter-bar">
-            <input
-              id="guestSearch"
-              type="search"
-              placeholder="Buscar por nome, telefone ou protocolo"
-            >
+          <div class="summary-strip">
+            <article><small>Confirmados</small><strong id="guestConfirmedCount">0</strong></article>
+            <article><small>Aguardando</small><strong id="guestWaitingCount">0</strong></article>
+            <article><small>Não poderão ir</small><strong id="guestDeclinedCount">0</strong></article>
+            <article><small>Total de pessoas</small><strong id="guestPeopleCount">0</strong></article>
+          </div>
 
+          <div class="filter-bar">
+            <input id="guestSearch" type="search" placeholder="Buscar nome, telefone ou protocolo">
             <select id="guestEventFilter">
               <option value="all">Todos os eventos</option>
               <option value="bage">Bagé</option>
               <option value="porto-alegre">Porto Alegre</option>
             </select>
-
             <select id="guestStatusFilter">
               <option value="all">Todos os status</option>
               <option value="confirmed">Confirmados</option>
+              <option value="waiting">Aguardando</option>
               <option value="declined">Não poderão ir</option>
             </select>
           </div>
@@ -288,69 +283,136 @@
                     <th>Ações</th>
                   </tr>
                 </thead>
-                <tbody id="guestsTableBody">
-                  <tr>
-                    <td colspan="9" class="table-empty">Carregando convidados...</td>
-                  </tr>
-                </tbody>
+                <tbody id="guestsTableBody"></tbody>
               </table>
             </div>
           </div>
         </section>
 
+        <!-- CONVITES -->
+        <section class="admin-section" id="section-invites">
+          <div class="section-toolbar">
+            <div>
+              <p class="eyebrow">WhatsApp</p>
+              <h2>Convites e lembretes</h2>
+              <p>Cadastre convidados, envie convites e acompanhe cada resposta.</p>
+            </div>
+            <button class="button button-primary" id="newInviteGuestButton" type="button">
+              + Adicionar convidado
+            </button>
+          </div>
+
+          <div class="summary-strip">
+            <article><small>Total</small><strong id="inviteTotal">0</strong></article>
+            <article><small>Pendentes</small><strong id="invitePending">0</strong></article>
+            <article><small>Enviados</small><strong id="inviteSent">0</strong></article>
+            <article><small>Aguardando resposta</small><strong id="inviteWaiting">0</strong></article>
+          </div>
+
+          <div class="panel compact-panel">
+            <div class="panel-header">
+              <div>
+                <p class="eyebrow">Mensagem padrão</p>
+                <h2>Texto do convite</h2>
+              </div>
+            </div>
+            <textarea id="inviteTemplate" rows="9"></textarea>
+            <div class="inline-actions">
+              <button class="button button-secondary" id="restoreInviteTemplate" type="button">Restaurar</button>
+              <button class="button button-primary" id="saveInviteTemplate" type="button">Salvar mensagem</button>
+            </div>
+          </div>
+
+          <div class="panel compact-panel">
+            <div class="panel-header">
+              <div>
+                <p class="eyebrow">Lembrete</p>
+                <h2>Confirmação até 31/08</h2>
+              </div>
+            </div>
+            <textarea id="reminderTemplate" rows="9"></textarea>
+            <div class="inline-actions">
+              <button class="button button-secondary" id="restoreReminderTemplate" type="button">Restaurar</button>
+              <button class="button button-primary" id="saveReminderTemplate" type="button">Salvar lembrete</button>
+            </div>
+          </div>
+
+          <div class="filter-bar">
+            <input id="inviteSearch" type="search" placeholder="Buscar convidado, telefone ou grupo">
+            <select id="inviteEventFilter">
+              <option value="all">Todos os eventos</option>
+              <option value="bage">Bagé</option>
+              <option value="porto-alegre">Porto Alegre</option>
+            </select>
+            <select id="inviteStatusFilter">
+              <option value="all">Todos os status</option>
+              <option value="pending">Convite pendente</option>
+              <option value="sent">Convite enviado</option>
+              <option value="waiting">Aguardando confirmação</option>
+              <option value="confirmed">Confirmado</option>
+              <option value="declined">Não poderá ir</option>
+            </select>
+          </div>
+
+          <div class="table-card">
+            <div class="table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Convidado</th>
+                    <th>Evento</th>
+                    <th>Pessoas</th>
+                    <th>Convite</th>
+                    <th>Resposta</th>
+                    <th>Último envio</th>
+                    <th>Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="invitesTableBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- PRESENTES -->
         <section class="admin-section" id="section-gifts">
           <div class="section-toolbar">
             <div>
               <p class="eyebrow">Lista de presentes</p>
-              <h2>Cadastro e controle dos itens</h2>
-              <p>
-                Os presentes ativos aparecem automaticamente na página pública.
-              </p>
+              <h2>Cadastro e controle</h2>
+              <p>Os presentes ativos aparecem automaticamente na página pública.</p>
             </div>
-
             <button class="button button-primary" id="newGiftButton" type="button">
               + Cadastrar presente
             </button>
           </div>
 
           <div class="filter-bar">
-            <input
-              id="giftAdminSearch"
-              type="search"
-              placeholder="Buscar por nome ou categoria"
-            >
-
-            <select id="giftAdminStatusFilter">
+            <input id="giftSearch" type="search" placeholder="Buscar presente ou categoria">
+            <select id="giftStatusFilter">
               <option value="all">Todos os itens</option>
               <option value="active">Ativos</option>
               <option value="inactive">Inativos</option>
-              <option value="available">Com unidades disponíveis</option>
-              <option value="finished">Quantidade esgotada</option>
+              <option value="available">Disponíveis</option>
+              <option value="finished">Esgotados</option>
             </select>
           </div>
 
-          <div class="admin-gifts-grid" id="adminGiftsGrid">
-            <p class="empty-copy">Carregando presentes...</p>
-          </div>
+          <div class="admin-gifts-grid" id="giftsGrid"></div>
         </section>
 
+        <!-- ESCOLHAS -->
         <section class="admin-section" id="section-giftSelections">
           <div class="section-toolbar">
             <div>
-              <p class="eyebrow">Escolhas dos convidados</p>
+              <p class="eyebrow">Presentes escolhidos</p>
               <h2>Quem escolheu cada presente</h2>
-              <p>
-                Estes dados ficam visíveis somente na Área dos Pais.
-              </p>
+              <p>Dados visíveis somente na Área dos Pais.</p>
             </div>
           </div>
 
           <div class="filter-bar">
-            <input
-              id="selectionSearch"
-              type="search"
-              placeholder="Buscar convidado, telefone ou presente"
-            >
+            <input id="selectionSearch" type="search" placeholder="Buscar convidado, telefone ou presente">
           </div>
 
           <div class="table-card">
@@ -364,92 +426,67 @@
                     <th>Quantidade</th>
                     <th>Recadinho</th>
                     <th>Data</th>
-                    <th>Status</th>
                   </tr>
                 </thead>
-                <tbody id="giftSelectionsTableBody">
-                  <tr>
-                    <td colspan="7" class="table-empty">Carregando escolhas...</td>
-                  </tr>
-                </tbody>
+                <tbody id="selectionsTableBody"></tbody>
               </table>
             </div>
           </div>
         </section>
 
+        <!-- MENSAGENS -->
         <section class="admin-section" id="section-messages">
           <div class="section-toolbar">
             <div>
               <p class="eyebrow">Moderação</p>
               <h2>Recadinhos para a Iúna</h2>
-              <p>
-                Aprove os recadinhos que poderão aparecer no site público.
-              </p>
+              <p>Aprove, oculte ou exclua mensagens.</p>
             </div>
           </div>
-
-          <div class="moderation-grid" id="messagesGrid">
-            <p class="empty-copy">Carregando recadinhos...</p>
-          </div>
+          <div class="moderation-grid" id="messagesGrid"></div>
         </section>
 
+        <!-- GALERIA -->
         <section class="admin-section" id="section-gallery">
           <div class="section-toolbar">
             <div>
               <p class="eyebrow">Álbum de memórias</p>
               <h2>Galeria da Iúna</h2>
-              <p>Publique, edite e organize as fotos que aparecerão no site.</p>
+              <p>Publique, edite e organize as fotos.</p>
             </div>
-
             <button class="button button-primary" id="newPhotoButton" type="button">
               + Adicionar foto
             </button>
           </div>
 
-          <div class="gallery-admin-summary">
-            <article><small>Total de fotos</small><strong id="galleryTotalCount">0</strong></article>
+          <div class="summary-strip">
+            <article><small>Total</small><strong id="galleryTotalCount">0</strong></article>
             <article><small>Publicadas</small><strong id="galleryPublishedCount">0</strong></article>
             <article><small>Pendentes</small><strong id="galleryPendingCount">0</strong></article>
-            <article><small>Em destaque</small><strong id="galleryFeaturedCount">0</strong></article>
+            <article><small>Destaques</small><strong id="galleryFeaturedCount">0</strong></article>
           </div>
 
-          <div class="filter-bar gallery-filter-bar">
-            <input id="gallerySearch" type="search" placeholder="Buscar por título, legenda, local ou autor">
-
-            <select id="galleryAlbumFilter">
-              <option value="all">Todos os álbuns</option>
-              <option value="Preparativos">Preparativos</option>
-              <option value="Bagé">Piquenique em Bagé</option>
-              <option value="Porto Alegre">Piquenique em Porto Alegre</option>
-              <option value="Família">Família</option>
-              <option value="Amigos">Amigos</option>
-              <option value="Bastidores">Bastidores</option>
-              <option value="Outros">Outros</option>
-            </select>
-
+          <div class="filter-bar">
+            <input id="gallerySearch" type="search" placeholder="Buscar título, legenda ou autor">
             <select id="galleryStatusFilter">
               <option value="all">Todos os status</option>
               <option value="pending">Pendentes</option>
-              <option value="approved">Aprovadas</option>
               <option value="published">Publicadas</option>
               <option value="hidden">Ocultas</option>
-              <option value="featured">Em destaque</option>
+              <option value="featured">Destaques</option>
             </select>
           </div>
 
-          <div class="gallery-admin-grid gallery-editor-grid" id="galleryAdminGrid">
-            <p class="empty-copy">Carregando fotos...</p>
-          </div>
+          <div class="gallery-admin-grid" id="galleryGrid"></div>
         </section>
 
+        <!-- EVENTOS -->
         <section class="admin-section" id="section-events">
           <div class="section-toolbar">
             <div>
               <p class="eyebrow">Informações oficiais</p>
               <h2>Eventos da Iúna</h2>
-              <p>
-                Revise as informações exibidas no painel administrativo.
-              </p>
+              <p>Referência para convites, confirmações e comunicação.</p>
             </div>
           </div>
 
@@ -477,21 +514,123 @@
             </article>
           </div>
         </section>
+
+        <!-- CONFIG -->
+        <section class="admin-section" id="section-settings">
+          <div class="section-toolbar">
+            <div>
+              <p class="eyebrow">Sistema</p>
+              <h2>Configurações</h2>
+              <p>Informações técnicas e ações rápidas do painel.</p>
+            </div>
+          </div>
+
+          <div class="settings-grid">
+            <article class="panel">
+              <h3>Site público</h3>
+              <p>https://cha-iuna.vercel.app</p>
+              <a class="button button-secondary" href="https://cha-iuna.vercel.app" target="_blank" rel="noopener">
+                Abrir site
+              </a>
+            </article>
+
+            <article class="panel">
+              <h3>Firebase</h3>
+              <p id="firebaseProjectInfo">Projeto conectado</p>
+              <small>As coleções são sincronizadas em tempo real.</small>
+            </article>
+
+            <article class="panel">
+              <h3>Atualização do painel</h3>
+              <p>Use o botão Sincronizar para redesenhar todos os módulos com os dados já recebidos.</p>
+              <button class="button button-primary" id="settingsSyncButton" type="button">Sincronizar agora</button>
+            </article>
+          </div>
+        </section>
       </main>
     </div>
   </div>
 
+  <!-- DIALOG CONVIDADO -->
+  <dialog id="inviteGuestDialog" class="admin-dialog">
+    <form id="inviteGuestForm" class="dialog-shell">
+      <button class="dialog-close" id="closeInviteGuestDialog" type="button">×</button>
+      <div class="dialog-heading">
+        <p class="eyebrow">Convites</p>
+        <h2 id="inviteGuestDialogTitle">Adicionar convidado</h2>
+      </div>
+
+      <input id="inviteGuestId" type="hidden">
+
+      <div class="form-grid">
+        <div class="form-field form-field-full">
+          <label for="inviteGuestName">Nome *</label>
+          <input id="inviteGuestName" type="text" required>
+        </div>
+        <div class="form-field">
+          <label for="inviteGuestPhone">WhatsApp *</label>
+          <input id="inviteGuestPhone" type="tel" required>
+        </div>
+        <div class="form-field">
+          <label for="inviteGuestGroup">Grupo</label>
+          <select id="inviteGuestGroup">
+            <option>Família</option>
+            <option>Amigos</option>
+            <option>Capoeira</option>
+            <option>Trabalho</option>
+            <option>Outros</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="inviteGuestEvent">Evento</label>
+          <select id="inviteGuestEvent">
+            <option value="bage">Bagé</option>
+            <option value="porto-alegre">Porto Alegre</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="inviteGuestPeople">Pessoas</label>
+          <input id="inviteGuestPeople" type="number" min="1" max="20" value="1">
+        </div>
+        <div class="form-field">
+          <label for="inviteGuestAdults">Adultos</label>
+          <input id="inviteGuestAdults" type="number" min="0" max="20" value="1">
+        </div>
+        <div class="form-field">
+          <label for="inviteGuestChildren">Crianças</label>
+          <input id="inviteGuestChildren" type="number" min="0" max="20" value="0">
+        </div>
+        <div class="form-field form-field-full">
+          <label for="inviteGuestNotes">Observações</label>
+          <textarea id="inviteGuestNotes" rows="3"></textarea>
+        </div>
+      </div>
+
+      <p class="form-feedback" id="inviteGuestFeedback"></p>
+      <button class="button button-primary button-full" type="submit">Salvar convidado</button>
+    </form>
+  </dialog>
+
+  <!-- DIALOG MENSAGEM -->
+  <dialog id="messageDialog" class="admin-dialog">
+    <div class="dialog-shell">
+      <button class="dialog-close" id="closeMessageDialog" type="button">×</button>
+      <div class="dialog-heading">
+        <p class="eyebrow" id="messageDialogEyebrow">Mensagem</p>
+        <h2 id="messageDialogTitle">WhatsApp</h2>
+      </div>
+      <textarea id="messagePreview" rows="15"></textarea>
+      <div class="dialog-actions">
+        <button class="button button-secondary" id="copyMessageButton" type="button">Copiar</button>
+        <button class="button button-primary" id="openWhatsappButton" type="button">Abrir WhatsApp</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- DIALOG PRESENTE -->
   <dialog id="giftDialog" class="admin-dialog">
     <form id="giftForm" class="dialog-shell">
-      <button
-        id="closeGiftDialog"
-        class="dialog-close"
-        type="button"
-        aria-label="Fechar"
-      >
-        ×
-      </button>
-
+      <button class="dialog-close" id="closeGiftDialog" type="button">×</button>
       <div class="dialog-heading">
         <p class="eyebrow">Lista de presentes</p>
         <h2 id="giftDialogTitle">Cadastrar presente</h2>
@@ -501,213 +640,127 @@
 
       <div class="form-grid">
         <div class="form-field form-field-full">
-          <label for="giftName">Nome do presente *</label>
-          <input id="giftName" type="text" maxlength="120" required>
+          <label for="giftName">Nome *</label>
+          <input id="giftName" type="text" required>
         </div>
-
         <div class="form-field">
           <label for="giftCategory">Categoria *</label>
           <select id="giftCategory" required>
             <option value="">Selecione</option>
-            <option value="Fraldas">Fraldas</option>
-            <option value="Higiene">Higiene</option>
-            <option value="Roupinhas">Roupinhas</option>
-            <option value="Quarto">Quarto</option>
-            <option value="Passeio">Passeio</option>
-            <option value="Alimentação">Alimentação</option>
-            <option value="Brinquedos">Brinquedos</option>
-            <option value="Outros">Outros</option>
+            <option>Fraldas</option>
+            <option>Higiene</option>
+            <option>Roupinhas</option>
+            <option>Quarto</option>
+            <option>Passeio</option>
+            <option>Alimentação</option>
+            <option>Brinquedos</option>
+            <option>Outros</option>
           </select>
         </div>
-
         <div class="form-field">
-          <label for="giftQuantity">Quantidade total *</label>
+          <label for="giftQuantity">Quantidade *</label>
           <input id="giftQuantity" type="number" min="1" max="100" value="1" required>
         </div>
-
         <div class="form-field form-field-full">
           <label for="giftDescription">Descrição</label>
-          <textarea id="giftDescription" rows="4" maxlength="500"></textarea>
+          <textarea id="giftDescription" rows="4"></textarea>
         </div>
-
         <div class="form-field form-field-full">
-          <label for="giftImage">Imagem do presente</label>
+          <label for="giftImage">Imagem</label>
           <input id="giftImage" type="file" accept="image/jpeg,image/png,image/webp">
-          <small>A imagem será reduzida antes de ser salva no Firestore.</small>
         </div>
-
-        <div class="image-preview-wrap form-field-full" id="giftImagePreviewWrap" hidden>
-          <img id="giftImagePreview" alt="Pré-visualização do presente">
-          <button id="removeGiftImage" type="button">Remover imagem</button>
-        </div>
-
         <label class="switch-field form-field-full">
           <input id="giftActive" type="checkbox" checked>
-          <span>
-            <b>Presente ativo</b>
-            <small>Quando ativo, aparece na página pública.</small>
-          </span>
+          <span><b>Ativo</b><small>Exibir na página pública.</small></span>
         </label>
       </div>
 
-      <p
-        class="form-feedback"
-        id="giftFormFeedback"
-        role="status"
-        aria-live="polite"
-      ></p>
+      <div class="image-preview-wrap" id="giftImagePreviewWrap" hidden>
+        <img id="giftImagePreview" alt="Prévia">
+        <button id="removeGiftImage" type="button">Remover imagem</button>
+      </div>
 
-      <button class="button button-primary button-full" type="submit">
-        <span class="button-text">Salvar presente</span>
-        <span class="button-loading" hidden>Salvando...</span>
-      </button>
+      <p class="form-feedback" id="giftFeedback"></p>
+      <button class="button button-primary button-full" type="submit">Salvar presente</button>
     </form>
   </dialog>
 
-  <dialog id="galleryDialog" class="admin-dialog gallery-dialog">
-    <form id="galleryForm" class="dialog-shell gallery-dialog-shell">
-      <button id="closeGalleryDialog" class="dialog-close" type="button" aria-label="Fechar">×</button>
-
+  <!-- DIALOG FOTO -->
+  <dialog id="photoDialog" class="admin-dialog">
+    <form id="photoForm" class="dialog-shell">
+      <button class="dialog-close" id="closePhotoDialog" type="button">×</button>
       <div class="dialog-heading">
-        <p class="eyebrow">Álbum de memórias</p>
-        <h2 id="galleryDialogTitle">Adicionar foto</h2>
-        <p>Edite as informações que serão exibidas junto com a imagem.</p>
+        <p class="eyebrow">Galeria</p>
+        <h2 id="photoDialogTitle">Adicionar foto</h2>
       </div>
 
-      <input id="galleryId" type="hidden">
+      <input id="photoId" type="hidden">
 
-      <div class="gallery-edit-layout">
-        <div class="gallery-edit-preview-column">
-          <div class="gallery-edit-preview" id="galleryImagePreviewWrap">
-            <div class="gallery-edit-placeholder" id="galleryImagePlaceholder">
-              <span>▧</span>
-              <strong>Escolha uma imagem</strong>
-              <small>JPG, PNG ou WEBP</small>
-            </div>
-            <img id="galleryImagePreview" alt="Pré-visualização da foto" hidden>
-          </div>
-
-          <div class="gallery-image-actions">
-            <label class="button button-secondary gallery-file-button" for="galleryImage">Escolher imagem</label>
-            <input id="galleryImage" type="file" accept="image/jpeg,image/png,image/webp" hidden>
-            <button id="removeGalleryImage" class="button button-secondary" type="button">Remover</button>
-          </div>
-
-          <small class="gallery-image-help">A imagem será reduzida antes de ser salva no Firestore.</small>
+      <div class="form-grid">
+        <div class="form-field form-field-full">
+          <label for="photoTitle">Título *</label>
+          <input id="photoTitle" type="text" required>
         </div>
-
-        <div class="form-grid gallery-form-grid">
-          <div class="form-field form-field-full">
-            <label for="galleryTitle">Título da foto *</label>
-            <input id="galleryTitle" type="text" maxlength="120" required>
-          </div>
-
-          <div class="form-field form-field-full">
-            <label for="galleryCaption">Legenda</label>
-            <textarea id="galleryCaption" rows="4" maxlength="700"></textarea>
-            <small><span id="galleryCaptionCount">0</span>/700 caracteres</small>
-          </div>
-
-          <div class="form-field">
-            <label for="galleryAlbum">Álbum *</label>
-            <select id="galleryAlbum" required>
-              <option value="">Selecione</option>
-              <option value="Preparativos">Preparativos</option>
-              <option value="Bagé">Piquenique em Bagé</option>
-              <option value="Porto Alegre">Piquenique em Porto Alegre</option>
-              <option value="Família">Família</option>
-              <option value="Amigos">Amigos</option>
-              <option value="Bastidores">Bastidores</option>
-              <option value="Outros">Outros</option>
-            </select>
-          </div>
-
-          <div class="form-field">
-            <label for="galleryEvent">Evento</label>
-            <select id="galleryEvent">
-              <option value="">Sem evento específico</option>
-              <option value="bage">Bagé</option>
-              <option value="porto-alegre">Porto Alegre</option>
-            </select>
-          </div>
-
-          <div class="form-field">
-            <label for="gallerySubmittedBy">Enviada por</label>
-            <input id="gallerySubmittedBy" type="text" maxlength="120">
-          </div>
-
-          <div class="form-field">
-            <label for="galleryPhotoDate">Data da foto</label>
-            <input id="galleryPhotoDate" type="date">
-          </div>
-
-          <div class="form-field">
-            <label for="galleryLocation">Local</label>
-            <input id="galleryLocation" type="text" maxlength="160">
-          </div>
-
-          <div class="form-field">
-            <label for="galleryOrder">Ordem de exibição</label>
-            <input id="galleryOrder" type="number" min="0" max="9999" value="0">
-          </div>
-
-          <label class="switch-field form-field-full">
-            <input id="galleryApproved" type="checkbox">
-            <span><b>Foto aprovada</b><small>Confirma que a imagem pode ser usada no site.</small></span>
-          </label>
-
-          <label class="switch-field form-field-full">
-            <input id="galleryPublished" type="checkbox">
-            <span><b>Publicar na galeria</b><small>A foto ficará visível para os convidados.</small></span>
-          </label>
-
-          <label class="switch-field form-field-full">
-            <input id="galleryFeatured" type="checkbox">
-            <span><b>Foto em destaque</b><small>Poderá aparecer nas áreas principais do site.</small></span>
-          </label>
+        <div class="form-field form-field-full">
+          <label for="photoCaption">Legenda</label>
+          <textarea id="photoCaption" rows="4"></textarea>
         </div>
+        <div class="form-field">
+          <label for="photoAlbum">Álbum</label>
+          <select id="photoAlbum">
+            <option>Preparativos</option>
+            <option>Bagé</option>
+            <option>Porto Alegre</option>
+            <option>Família</option>
+            <option>Amigos</option>
+            <option>Bastidores</option>
+            <option>Outros</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="photoSubmittedBy">Enviada por</label>
+          <input id="photoSubmittedBy" type="text">
+        </div>
+        <div class="form-field form-field-full">
+          <label for="photoImage">Imagem</label>
+          <input id="photoImage" type="file" accept="image/jpeg,image/png,image/webp">
+        </div>
+        <label class="switch-field form-field-full">
+          <input id="photoApproved" type="checkbox">
+          <span><b>Aprovada</b><small>Pode ser exibida no site.</small></span>
+        </label>
+        <label class="switch-field form-field-full">
+          <input id="photoPublished" type="checkbox">
+          <span><b>Publicada</b><small>Visível na galeria pública.</small></span>
+        </label>
+        <label class="switch-field form-field-full">
+          <input id="photoFeatured" type="checkbox">
+          <span><b>Destaque</b><small>Pode aparecer em áreas principais.</small></span>
+        </label>
       </div>
 
-      <p class="form-feedback" id="galleryFormFeedback" role="status" aria-live="polite"></p>
-
-      <div class="gallery-dialog-actions">
-        <button class="button button-secondary" id="cancelGalleryEdit" type="button">Cancelar</button>
-        <button class="button button-primary" type="submit">
-          <span class="button-text">Salvar foto</span>
-          <span class="button-loading" hidden>Salvando...</span>
-        </button>
+      <div class="image-preview-wrap" id="photoImagePreviewWrap" hidden>
+        <img id="photoImagePreview" alt="Prévia">
+        <button id="removePhotoImage" type="button">Remover imagem</button>
       </div>
+
+      <p class="form-feedback" id="photoFeedback"></p>
+      <button class="button button-primary button-full" type="submit">Salvar foto</button>
     </form>
   </dialog>
 
-  <dialog id="confirmDialog" class="admin-dialog confirm-dialog">
+  <!-- CONFIRMAÇÃO -->
+  <dialog id="confirmDialog" class="admin-dialog">
     <div class="dialog-shell compact">
       <p class="eyebrow">Confirmação</p>
       <h2 id="confirmDialogTitle">Confirmar ação</h2>
       <p id="confirmDialogMessage"></p>
-
       <div class="dialog-actions">
-        <button class="button button-secondary" id="cancelConfirm" type="button">
-          Cancelar
-        </button>
-        <button class="button button-danger" id="acceptConfirm" type="button">
-          Confirmar
-        </button>
+        <button class="button button-secondary" id="cancelConfirm" type="button">Cancelar</button>
+        <button class="button button-danger" id="acceptConfirm" type="button">Confirmar</button>
       </div>
     </div>
   </dialog>
-
-  <script>
-    document.addEventListener("DOMContentLoaded", () => {
-      const invitationsButton = document.querySelector(
-        "#openInvitationsPage"
-      );
-
-      invitationsButton?.addEventListener("click", () => {
-        window.location.href = "./admin-convites.html";
-      });
-    });
-  </script>
 
   <script type="module" src="./assets/js/admin-auth.js"></script>
   <script type="module" src="./assets/js/admin.js"></script>

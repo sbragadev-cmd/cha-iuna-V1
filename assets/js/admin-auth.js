@@ -16,10 +16,8 @@ const loading = document.querySelector("#adminLoading");
 const app = document.querySelector("#adminApp");
 const logoutButton = document.querySelector("#logoutButton");
 
-
 function getNormalizedField(data, expectedName) {
   if (!data || typeof data !== "object") return undefined;
-
   if (Object.prototype.hasOwnProperty.call(data, expectedName)) {
     return data[expectedName];
   }
@@ -44,7 +42,6 @@ function isAdminActive(value) {
     || String(value).trim().toLowerCase() === "ativo";
 }
 
-
 async function validateAdmin(user) {
   const adminRef = doc(db, "admins", user.uid);
   const snapshot = await getDoc(adminRef);
@@ -54,22 +51,11 @@ async function validateAdmin(user) {
   }
 
   const data = snapshot.data();
-  const rawActive = getNormalizedField(data, "active");
-  const rawRole = getNormalizedField(data, "role");
-  const active = isAdminActive(rawActive);
-  const role = normalizeRole(rawRole);
-
-  console.log("[ADMIN AUTH] Verificação administrativa", {
-    uid: user.uid,
-    projectId: db.app.options.projectId,
-    chavesRecebidas: Object.keys(data),
-    activeRecebido: rawActive,
-    activeInterpretado: active,
-    roleRecebida: rawRole,
-    roleInterpretada: role
-  });
+  const active = isAdminActive(getNormalizedField(data, "active"));
+  const role = normalizeRole(getNormalizedField(data, "role"));
 
   if (!active) throw new Error("ADMIN_INACTIVE");
+
   if (!["owner", "admin", "editor"].includes(role)) {
     throw new Error("ADMIN_ROLE_INVALID");
   }
@@ -112,7 +98,9 @@ onAuthStateChanged(auth, async (user) => {
     console.error("[ADMIN AUTH] Acesso recusado:", error);
 
     await signOut(auth).catch(() => {});
-    window.location.replace(`./login.html?erro=${encodeURIComponent(error.message)}`);
+    window.location.replace(
+      `./login.html?erro=${encodeURIComponent(error.message)}`
+    );
   }
 });
 
